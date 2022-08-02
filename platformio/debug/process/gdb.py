@@ -48,10 +48,10 @@ class GDBClientProcess(DebugClientProcess):
             self.project_dir,
             "-l",
             "10",
+            *list(extra_args or []),
         ]
-        args.extend(list(extra_args or []))
-        gdb_data_dir = self._get_data_dir(gdb_path)
-        if gdb_data_dir:
+
+        if gdb_data_dir := self._get_data_dir(gdb_path):
             args.extend(["--data-directory", gdb_data_dir])
         args.append(self.debug_config.program_path)
 
@@ -74,28 +74,29 @@ class GDBClientProcess(DebugClientProcess):
             commands = self.debug_config.init_cmds
         commands.extend(self.debug_config.extra_cmds)
 
-        if not any("define pio_reset_run_target" in cmd for cmd in commands):
+        if all("define pio_reset_run_target" not in cmd for cmd in commands):
             commands = [
                 "define pio_reset_run_target",
                 "   echo Warning! Undefined pio_reset_run_target command\\n",
                 "   monitor reset",
                 "end",
             ] + commands
-        if not any("define pio_reset_halt_target" in cmd for cmd in commands):
+        if all("define pio_reset_halt_target" not in cmd for cmd in commands):
             commands = [
                 "define pio_reset_halt_target",
                 "   echo Warning! Undefined pio_reset_halt_target command\\n",
                 "   monitor reset halt",
                 "end",
             ] + commands
-        if not any("define pio_restart_target" in cmd for cmd in commands):
+        if all("define pio_restart_target" not in cmd for cmd in commands):
             commands += [
                 "define pio_restart_target",
                 "   pio_reset_halt_target",
                 "   $INIT_BREAK",
-                "   %s" % ("continue" if self.debug_config.init_break else "next"),
+                f'   {"continue" if self.debug_config.init_break else "next"}',
                 "end",
             ]
+
 
         banner = [
             "echo PlatformIO Unified Debugger -> https://bit.ly/pio-debug\\n",
@@ -185,9 +186,7 @@ class GDBClientProcess(DebugClientProcess):
         last_erros = " ".join(reversed(last_erros.split("\n")))
         last_erros = re.sub(r'((~|&)"|\\n\"|\\t)', " ", last_erros, flags=re.M)
 
-        err = "%s -> %s" % (
-            telemetry.dump_run_environment(self.debug_config.env_options),
-            last_erros,
-        )
-        telemetry.send_exception("DebugInitError: %s" % err)
+        err = f"{telemetry.dump_run_environment(self.debug_config.env_options)} -> {last_erros}"
+
+        telemetry.send_exception(f"DebugInitError: {err}")
         self.transport.close()

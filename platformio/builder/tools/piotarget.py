@@ -24,9 +24,7 @@ from platformio import compat, fs
 
 
 def VerboseAction(_, act, actstr):
-    if int(ARGUMENTS.get("PIOVERBOSE", 0)):
-        return act
-    return Action(act, actstr)
+    return act if int(ARGUMENTS.get("PIOVERBOSE", 0)) else Action(act, actstr)
 
 
 def PioClean(env, clean_all=False):
@@ -47,10 +45,7 @@ def PioClean(env, clean_all=False):
             for f in files:
                 dst = os.path.join(root, f)
                 os.remove(dst)
-                print(
-                    "Removed %s"
-                    % (dst if not clean_rel_path.startswith(".") else _relpath(dst))
-                )
+                print(f'Removed {_relpath(dst) if clean_rel_path.startswith(".") else dst}')
 
     build_dir = env.subst("$BUILD_DIR")
     libdeps_dir = env.subst("$PROJECT_LIBDEPS_DIR")
@@ -100,8 +95,8 @@ def AddCustomTarget(env, *args, **kwargs):
 def DumpTargets(env):
     targets = env.get("__PIO_TARGETS") or {}
     # pre-fill default targets if embedded dev-platform
-    if env.PioPlatform().is_embedded() and not any(
-        t["group"] == "Platform" for t in targets.values()
+    if env.PioPlatform().is_embedded() and all(
+        t["group"] != "Platform" for t in targets.values()
     ):
         targets["upload"] = dict(name="upload", group="Platform", title="Upload")
     targets["compiledb"] = dict(

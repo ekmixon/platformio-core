@@ -27,7 +27,7 @@ class RegistryClient(HTTPClient):
         headers = kwargs.get("headers", {})
         if "Authorization" not in headers:
             token = AccountClient().fetch_authentication_token()
-            headers["Authorization"] = "Bearer %s" % token
+            headers["Authorization"] = f"Bearer {token}"
         kwargs["headers"] = headers
         return self.fetch_json_data(*args, **kwargs)
 
@@ -37,7 +37,7 @@ class RegistryClient(HTTPClient):
         with open(archive_path, "rb") as fp:
             return self.send_auth_request(
                 "post",
-                "/v3/packages/%s/%s" % (owner, type),
+                f"/v3/packages/{owner}/{type}",
                 params={
                     "private": 1 if private else 0,
                     "notify": 1 if notify else 0,
@@ -55,9 +55,9 @@ class RegistryClient(HTTPClient):
     def unpublish_package(  # pylint: disable=redefined-builtin
         self, owner, type, name, version=None, undo=False
     ):
-        path = "/v3/packages/%s/%s/%s" % (owner, type, name)
+        path = f"/v3/packages/{owner}/{type}/{name}"
         if version:
-            path += "/" + version
+            path += f"/{version}"
         return self.send_auth_request(
             "delete",
             path,
@@ -66,23 +66,19 @@ class RegistryClient(HTTPClient):
 
     def update_resource(self, urn, private):
         return self.send_auth_request(
-            "put",
-            "/v3/resources/%s" % urn,
-            data={"private": int(private)},
+            "put", f"/v3/resources/{urn}", data={"private": int(private)}
         )
 
     def grant_access_for_resource(self, urn, client, level):
         return self.send_auth_request(
             "put",
-            "/v3/resources/%s/access" % urn,
+            f"/v3/resources/{urn}/access",
             data={"client": client, "level": level},
         )
 
     def revoke_access_from_resource(self, urn, client):
         return self.send_auth_request(
-            "delete",
-            "/v3/resources/%s/access" % urn,
-            data={"client": client},
+            "delete", f"/v3/resources/{urn}/access", data={"client": client}
         )
 
     def list_resources(self, owner):
@@ -107,10 +103,13 @@ class RegistryClient(HTTPClient):
             )
             assert set(filters.keys()) <= set(valid_filters)
             for name, values in filters.items():
-                for value in set(
-                    values if isinstance(values, (list, tuple)) else [values]
-                ):
-                    search_query.append('%s:"%s"' % (name[:-1], value))
+                search_query.extend(
+                    '%s:"%s"' % (name[:-1], value)
+                    for value in set(
+                        values if isinstance(values, (list, tuple)) else [values]
+                    )
+                )
+
         if query:
             search_query.append(query)
         params = dict(query=" ".join(search_query))

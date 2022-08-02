@@ -37,7 +37,7 @@ class memoized(object):
     def __init__(self, expire=0):
         expire = str(expire)
         if expire.isdigit():
-            expire = "%ss" % int((int(expire) / 1000))
+            expire = f"{int(expire) // 1000}s"
         tdmap = {"s": 1, "m": 60, "h": 3600, "d": 86400}
         assert expire.endswith(tuple(tdmap))
         self.expire = int(tdmap[expire[-1]] * int(expire[:-1]))
@@ -94,7 +94,7 @@ def get_systype():
     arch = platform.machine().lower()
     if type_ == "windows":
         arch = "amd64" if platform.architecture()[0] == "64bit" else "x86"
-    return "%s_%s" % (type_, arch) if arch else type_
+    return f"{type_}_{arch}" if arch else type_
 
 
 def get_serial_ports(filter_hwid=False):
@@ -116,8 +116,11 @@ def get_serial_ports(filter_hwid=False):
 
     # fix for PySerial
     if not result and IS_MACOS:
-        for p in glob("/dev/tty.*"):
-            result.append({"port": p, "description": "n/a", "hwid": "n/a"})
+        result.extend(
+            {"port": p, "description": "n/a", "hwid": "n/a"}
+            for p in glob("/dev/tty.*")
+        )
+
     return result
 
 
@@ -134,30 +137,32 @@ def get_logical_devices():
             ).get("out", "")
             devicenamere = re.compile(r"^([A-Z]{1}\:)\s*(\S+)?")
             for line in result.split("\n"):
-                match = devicenamere.match(line.strip())
-                if not match:
-                    continue
-                items.append({"path": match.group(1) + "\\", "name": match.group(2)})
+                if match := devicenamere.match(line.strip()):
+                    items.append({"path": match[1] + "\\", "name": match[2]})
             return items
         except WindowsError:  # pylint: disable=undefined-variable
             pass
         # try "fsutil"
         result = proc.exec_command(["fsutil", "fsinfo", "drives"]).get("out", "")
-        for device in re.findall(r"[A-Z]:\\", result):
-            items.append({"path": device, "name": None})
+        items.extend(
+            {"path": device, "name": None}
+            for device in re.findall(r"[A-Z]:\\", result)
+        )
+
         return items
 
     result = proc.exec_command(["df"]).get("out")
     devicenamere = re.compile(r"^/.+\d+\%\s+([a-z\d\-_/]+)$", flags=re.I)
     for line in result.split("\n"):
-        match = devicenamere.match(line.strip())
-        if not match:
-            continue
-        items.append({"path": match.group(1), "name": os.path.basename(match.group(1))})
+        if match := devicenamere.match(line.strip()):
+            items.append({"path": match[1], "name": os.path.basename(match[1])})
     return items
 
 
 def get_mdns_services():
+
+
+
     class mDNSListener(object):
         def __init__(self):
             self._zc = zeroconf.Zeroconf(interfaces=zeroconf.InterfaceChoice.All)
@@ -189,8 +194,7 @@ def get_mdns_services():
                 self._found_types.append(name)
                 zeroconf.ServiceBrowser(self._zc, name, self)
             if type_ in self._found_types:
-                s = zc.get_service_info(type_, name)
-                if s:
+                if s := zc.get_service_info(type_, name):
                     self._found_services.append(s)
 
         def remove_service(self, zc, type_, name):
@@ -201,6 +205,7 @@ def get_mdns_services():
 
         def get_services(self):
             return self._found_services
+
 
     items = []
     with mDNSListener() as mdns:
@@ -235,7 +240,7 @@ def pioversion_to_intstr():
     """Legacy for  framework-zephyr/scripts/platformio/platformio-build-pre.py"""
     vermatch = re.match(r"^([\d\.]+)", __version__)
     assert vermatch
-    return [int(i) for i in vermatch.group(1).split(".")[:3]]
+    return [int(i) for i in vermatch[1].split(".")[:3]]
 
 
 def items_to_list(items):
@@ -273,7 +278,7 @@ def print_labeled_bar(label, is_error=False, fg=None):
     terminal_width, _ = shutil.get_terminal_size()
     width = len(click.unstyle(label))
     half_line = "=" * int((terminal_width - width - 2) / 2)
-    click.secho("%s %s %s" % (half_line, label, half_line), fg=fg, err=is_error)
+    click.secho(f"{half_line} {label} {half_line}", fg=fg, err=is_error)
 
 
 def humanize_duration_time(duration):

@@ -107,8 +107,9 @@ class BasePackageManager(  # pylint: disable=too-many-public-methods
 
     def print_message(self, message, **kwargs):
         click.echo(
-            "%s: " % str(self.__class__.__name__).replace("Package", " "), nl=False
+            f'{str(self.__class__.__name__).replace("Package", " ")}: ', nl=False
         )
+
         click.secho(message, **kwargs)
 
     def get_download_dir(self):
@@ -147,9 +148,8 @@ class BasePackageManager(  # pylint: disable=too-many-public-methods
 
     def load_manifest(self, src):
         path = src.path if isinstance(src, PackageItem) else src
-        cache_key = "load_manifest-%s" % path
-        result = self.memcache_get(cache_key)
-        if result:
+        cache_key = f"load_manifest-{path}"
+        if result := self.memcache_get(cache_key):
             return result
         candidates = (
             [os.path.join(path, name) for name in self.manifest_names]
@@ -183,10 +183,7 @@ class BasePackageManager(  # pylint: disable=too-many-public-methods
         if not metadata.name or spec.has_custom_name():
             metadata.name = spec.name
         if vcs_revision:
-            metadata.version = "%s+sha.%s" % (
-                metadata.version if metadata.version else "0.0.0",
-                vcs_revision,
-            )
+            metadata.version = f'{metadata.version or "0.0.0"}+sha.{vcs_revision}'
         if not metadata.version:
             metadata.version = self.generate_rand_version()
         return metadata

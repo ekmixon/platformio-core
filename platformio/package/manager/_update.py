@@ -69,12 +69,16 @@ class PackageManagerUpdateMixin(object):
             vcs = VCSClientFactory.new(pkg.path, pkg.metadata.spec.url, silent=True)
         except VCSBaseException:
             return None
-        if not vcs.can_be_updated:
-            return None
-        return str(
-            self.build_metadata(
-                pkg.path, pkg.metadata.spec, vcs_revision=vcs.get_latest_revision()
-            ).version
+        return (
+            str(
+                self.build_metadata(
+                    pkg.path,
+                    pkg.metadata.spec,
+                    vcs_revision=vcs.get_latest_revision(),
+                ).version
+            )
+            if vcs.can_be_updated
+            else None
         )
 
     def update(  # pylint: disable=too-many-arguments
@@ -94,12 +98,13 @@ class PackageManagerUpdateMixin(object):
                 "{} {:<45} {:<35}".format(
                     "Checking" if only_check else "Updating",
                     click.style(pkg.metadata.spec.humanize(), fg="cyan"),
-                    "%s @ %s" % (pkg.metadata.version, to_spec.requirements)
+                    f"{pkg.metadata.version} @ {to_spec.requirements}"
                     if to_spec and to_spec.requirements
                     else str(pkg.metadata.version),
                 ),
                 nl=False,
             )
+
         if not ensure_internet_on():
             if not silent:
                 click.echo("[%s]" % (click.style("Off-line", fg="yellow")))
@@ -132,25 +137,28 @@ class PackageManagerUpdateMixin(object):
 
         if outdated.wanted and outdated.current == outdated.wanted:
             return click.echo(
-                "[%s]" % (click.style("Incompatible %s" % outdated.latest, fg="yellow"))
+                "[%s]"
+                % click.style(f"Incompatible {outdated.latest}", fg="yellow")
             )
+
 
         if only_check:
             return click.echo(
-                "[%s]"
-                % (
-                    click.style(
-                        "Outdated %s" % str(outdated.wanted or outdated.latest),
+                (
+                    "[%s]"
+                    % click.style(
+                        f"Outdated {str((outdated.wanted or outdated.latest))}",
                         fg="red",
                     )
                 )
             )
 
+
         return click.echo(
-            "[%s]"
-            % (
-                click.style(
-                    "Updating to %s" % str(outdated.wanted or outdated.latest),
+            (
+                "[%s]"
+                % click.style(
+                    f"Updating to {str((outdated.wanted or outdated.latest))}",
                     fg="green",
                 )
             )
@@ -174,14 +182,13 @@ class PackageManagerUpdateMixin(object):
             silent=silent,
         )
         if new_pkg:
-            old_pkg = self.get_package(
+            if old_pkg := self.get_package(
                 PackageSpec(
                     id=pkg.metadata.spec.id,
                     owner=pkg.metadata.spec.owner,
                     name=pkg.metadata.name,
                     requirements=pkg.metadata.version,
                 )
-            )
-            if old_pkg:
+            ):
                 self.uninstall(old_pkg, silent=silent, skip_dependencies=True)
         return new_pkg

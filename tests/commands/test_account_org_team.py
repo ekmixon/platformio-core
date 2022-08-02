@@ -49,18 +49,18 @@ def test_prepare():
     global username, email, splited_email, firstname, lastname
     global password, orgname, display_name, second_username, teamname, team_description
 
-    username = "test-piocore-%s" % str(random.randint(0, 100000))
+    username = f"test-piocore-{random.randint(0, 100000)}"
     splited_email = os.environ.get("TEST_EMAIL_LOGIN").split("@")
-    email = "%s+%s@%s" % (splited_email[0], username, splited_email[1])
+    email = f"{splited_email[0]}+{username}@{splited_email[1]}"
     firstname = "Test"
     lastname = "User"
     password = "Qwerty123!"
 
-    orgname = "testorg-piocore-%s" % str(random.randint(0, 100000))
+    orgname = f"testorg-piocore-{random.randint(0, 100000)}"
     display_name = "Test Org for PIO Core"
     second_username = "ivankravets"
 
-    teamname = "test-" + str(random.randint(0, 100000))
+    teamname = f"test-{random.randint(0, 100000)}"
     team_description = "team for CI test"
 
 
@@ -138,9 +138,11 @@ def test_account_summary(
     assert json_result.get("profile")
     assert json_result.get("profile").get("username")
     assert json_result.get("profile").get("email")
-    assert username == json_result.get("profile").get(
-        "username"
-    ) or username == json_result.get("profile").get("email")
+    assert username in [
+        json_result.get("profile").get("username"),
+        json_result.get("profile").get("email"),
+    ]
+
     assert json_result.get("profile").get("firstname")
     assert json_result.get("profile").get("lastname")
     assert json_result.get("packages")
@@ -155,9 +157,11 @@ def test_account_summary(
     assert json_result.get("profile")
     assert json_result.get("profile").get("username")
     assert json_result.get("profile").get("email")
-    assert username == json_result.get("profile").get(
-        "username"
-    ) or username == json_result.get("profile").get("email")
+    assert username in [
+        json_result.get("profile").get("username"),
+        json_result.get("profile").get("email"),
+    ]
+
     assert json_result.get("profile").get("firstname")
     assert json_result.get("profile").get("lastname")
     assert json_result.get("packages")
@@ -271,11 +275,11 @@ def test_account_update(
     global firstname
     global lastname
 
-    firstname = "First " + str(random.randint(0, 100000))
-    lastname = "Last" + str(random.randint(0, 100000))
+    firstname = f"First {random.randint(0, 100000)}"
+    lastname = f"Last{random.randint(0, 100000)}"
 
-    username = "username" + str(random.randint(0, 100000))
-    email = "%s+new-%s@%s" % (splited_email[0], username, splited_email[1])
+    username = f"username{random.randint(0, 100000)}"
+    email = f"{splited_email[0]}+new-{username}@{splited_email[1]}"
     result = clirunner.invoke(
         cmd_account,
         [
@@ -404,7 +408,7 @@ def test_org_remove_owner(clirunner, validate_cliresult, isolated_pio_core):
 
 
 def test_org_update(clirunner, validate_cliresult, isolated_pio_core):
-    new_orgname = "neworg-piocore-%s" % str(random.randint(0, 100000))
+    new_orgname = f"neworg-piocore-{random.randint(0, 100000)}"
     new_display_name = "Test Org for PIO Core"
 
     result = clirunner.invoke(
@@ -451,21 +455,14 @@ def test_org_update(clirunner, validate_cliresult, isolated_pio_core):
 def test_team_create(clirunner, validate_cliresult, isolated_pio_core):
     result = clirunner.invoke(
         cmd_team,
-        [
-            "create",
-            "%s:%s" % (orgname, teamname),
-            "--description",
-            team_description,
-        ],
+        ["create", f"{orgname}:{teamname}", "--description", team_description],
     )
+
     validate_cliresult(result)
 
 
 def test_team_list(clirunner, validate_cliresult, isolated_pio_core):
-    result = clirunner.invoke(
-        cmd_team,
-        ["list", "%s" % orgname, "--json-output"],
-    )
+    result = clirunner.invoke(cmd_team, ["list", f"{orgname}", "--json-output"])
     validate_cliresult(result)
     json_result = json.loads(result.output.strip())
     for item in json_result:
@@ -477,54 +474,46 @@ def test_team_list(clirunner, validate_cliresult, isolated_pio_core):
 
 def test_team_add_member(clirunner, validate_cliresult, isolated_pio_core):
     result = clirunner.invoke(
-        cmd_team,
-        ["add", "%s:%s" % (orgname, teamname), second_username],
+        cmd_team, ["add", f"{orgname}:{teamname}", second_username]
     )
+
     validate_cliresult(result)
 
-    result = clirunner.invoke(
-        cmd_team,
-        ["list", "%s" % orgname, "--json-output"],
-    )
+    result = clirunner.invoke(cmd_team, ["list", f"{orgname}", "--json-output"])
     validate_cliresult(result)
     assert second_username in result.output
 
 
 def test_team_remove(clirunner, validate_cliresult, isolated_pio_core):
     result = clirunner.invoke(
-        cmd_team,
-        ["remove", "%s:%s" % (orgname, teamname), second_username],
+        cmd_team, ["remove", f"{orgname}:{teamname}", second_username]
     )
+
     validate_cliresult(result)
 
-    result = clirunner.invoke(
-        cmd_team,
-        ["list", "%s" % orgname, "--json-output"],
-    )
+    result = clirunner.invoke(cmd_team, ["list", f"{orgname}", "--json-output"])
     validate_cliresult(result)
     assert second_username not in result.output
 
 
 def test_team_update(clirunner, validate_cliresult, receive_email, isolated_pio_core):
-    new_teamname = "new-" + str(random.randint(0, 100000))
+    new_teamname = f"new-{random.randint(0, 100000)}"
     newteam_description = "Updated Description"
     result = clirunner.invoke(
         cmd_team,
         [
             "update",
-            "%s:%s" % (orgname, teamname),
+            f"{orgname}:{teamname}",
             "--name",
             new_teamname,
             "--description",
             newteam_description,
         ],
     )
+
     validate_cliresult(result)
 
-    result = clirunner.invoke(
-        cmd_team,
-        ["list", "%s" % orgname, "--json-output"],
-    )
+    result = clirunner.invoke(cmd_team, ["list", f"{orgname}", "--json-output"])
     validate_cliresult(result)
     json_result = json.loads(result.output.strip())
     for item in json_result:
@@ -537,18 +526,19 @@ def test_team_update(clirunner, validate_cliresult, receive_email, isolated_pio_
         cmd_team,
         [
             "update",
-            "%s:%s" % (orgname, new_teamname),
+            f"{orgname}:{new_teamname}",
             "--name",
             teamname,
             "--description",
             team_description,
         ],
     )
+
     validate_cliresult(result)
 
 
 def test_cleanup(clirunner, validate_cliresult, receive_email, isolated_pio_core):
-    result = clirunner.invoke(cmd_team, ["destroy", "%s:%s" % (orgname, teamname)], "y")
+    result = clirunner.invoke(cmd_team, ["destroy", f"{orgname}:{teamname}"], "y")
     validate_cliresult(result)
     result = clirunner.invoke(cmd_org, ["destroy", orgname], "y")
     validate_cliresult(result)

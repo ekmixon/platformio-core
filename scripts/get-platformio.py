@@ -39,11 +39,11 @@ def download_with_urllib3(url, dst):
 
     with open(dst, "wb") as out:
         while True:
-            data = r.read(io.DEFAULT_BUFFER_SIZE)
-            if not data:
-                break
-            out.write(data)
+            if data := r.read(io.DEFAULT_BUFFER_SIZE):
+                out.write(data)
 
+            else:
+                break
     r.release_conn()
     return dst
 
@@ -58,11 +58,11 @@ def download_with_urllib(url, dst):
     CHUNK = 16 * 1024
     with open(dst, "wb") as f:
         while True:
-            chunk = response.read(CHUNK)
-            if not chunk:
-                break
-            f.write(chunk)
+            if chunk := response.read(CHUNK):
+                f.write(chunk)
 
+            else:
+                break
     return dst
 
 

@@ -81,8 +81,8 @@ TRANSPORT_OPTIONS = {
     },
 }
 
-CTX_META_TEST_IS_RUNNING = __name__ + ".test_running"
-CTX_META_TEST_RUNNING_NAME = __name__ + ".test_running_name"
+CTX_META_TEST_IS_RUNNING = f"{__name__}.test_running"
+CTX_META_TEST_RUNNING_NAME = f"{__name__}.test_running_name"
 
 
 class TestProcessorBase(object):
@@ -221,9 +221,9 @@ class TestProcessorBase(object):
 
         delete_tmptest_files(test_dir)
         tmp_file = join(
-            test_dir,
-            "%s.%s" % (tmp_file_prefix, transport_options.get("language", "c")),
+            test_dir, f'{tmp_file_prefix}.{transport_options.get("language", "c")}'
         )
+
         with open(tmp_file, mode="w", encoding="utf8") as fp:
             fp.write(data)
 

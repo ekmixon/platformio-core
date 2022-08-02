@@ -75,10 +75,13 @@ def run_server(host, port, no_open, shutdown_timeout, home_url):
 
     path = urlparse(home_url).path
     routes = [
-        WebSocketRoute(path + "wsrpc", ws_rpc_factory, name="wsrpc"),
-        Route(path + "__shutdown__", shutdown_server, methods=["POST"]),
-        Mount(path, StaticFiles(directory=contrib_dir, html=True), name="static"),
+        WebSocketRoute(f"{path}wsrpc", ws_rpc_factory, name="wsrpc"),
+        Route(f"{path}__shutdown__", shutdown_server, methods=["POST"]),
+        Mount(
+            path, StaticFiles(directory=contrib_dir, html=True), name="static"
+        ),
     ]
+
     if path != "/":
         routes.append(Route("/", protected_page))
 

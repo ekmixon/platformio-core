@@ -28,8 +28,7 @@ class DeviceMonitorFilter(miniterm.Transform):
 
         self.config = ProjectConfig.get_instance()
         if not self.environment:
-            default_envs = self.config.default_envs()
-            if default_envs:
+            if default_envs := self.config.default_envs():
                 self.environment = default_envs[0]
             elif self.config.envs():
                 self.environment = self.config.envs()[0]

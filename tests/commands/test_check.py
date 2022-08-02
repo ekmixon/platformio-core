@@ -218,8 +218,10 @@ def test_check_custom_pattern_absolute_path(
     check_dir.join("main.cpp").write(TEST_CODE)
 
     result = clirunner.invoke(
-        cmd_check, ["--project-dir", str(project_dir), "--pattern=" + str(check_dir)]
+        cmd_check,
+        ["--project-dir", str(project_dir), f"--pattern={str(check_dir)}"],
     )
+
     validate_cliresult(result)
 
     errors, warnings, style = count_defects(result.output)
@@ -501,10 +503,7 @@ int main() {
             result = clirunner.invoke(cmd_check, ["--project-dir", str(tmpdir)])
             validate_cliresult(result)
             defects = sum(count_defects(result.output))
-            assert defects > 0, "Failed %s with %s" % (
-                framework,
-                tool,
-            )
+            assert defects > 0, f"Failed {framework} with {tool}"
 
 
 def test_check_skip_includes_from_packages(clirunner, validate_cliresult, tmpdir):
@@ -529,7 +528,7 @@ framework = arduino
             continue
         for inc in l.split(" "):
             if inc.startswith("-I") and project_path not in inc:
-                pytest.fail("Detected an include path from packages: " + inc)
+                pytest.fail(f"Detected an include path from packages: {inc}")
 
 
 def test_check_multiline_error(clirunner, tmpdir_factory):

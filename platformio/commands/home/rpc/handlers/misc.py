@@ -25,8 +25,7 @@ class MiscRPC:
         cache_key = ContentCache.key_from_args(data_url, "tweets")
         cache_valid = "180d"
         with ContentCache() as cc:
-            cache_data = cc.get(cache_key)
-            if cache_data:
+            if cache_data := cc.get(cache_key):
                 cache_data = json.loads(cache_data)
                 # automatically update cache in background every 12 hours
                 if cache_data["time"] < (time.time() - (3600 * 12)):

@@ -36,10 +36,10 @@ try:
 except ImportError:
     from urllib import quote
 
-CTX_META_INPUT_DIRS_KEY = __name__ + ".input_dirs"
-CTX_META_PROJECT_ENVIRONMENTS_KEY = __name__ + ".project_environments"
-CTX_META_STORAGE_DIRS_KEY = __name__ + ".storage_dirs"
-CTX_META_STORAGE_LIBDEPS_KEY = __name__ + ".storage_lib_deps"
+CTX_META_INPUT_DIRS_KEY = f"{__name__}.input_dirs"
+CTX_META_PROJECT_ENVIRONMENTS_KEY = f"{__name__}.project_environments"
+CTX_META_STORAGE_DIRS_KEY = f"{__name__}.storage_dirs"
+CTX_META_STORAGE_LIBDEPS_KEY = f"{__name__}.storage_lib_deps"
 
 
 def get_project_global_lib_dir():
@@ -117,9 +117,9 @@ def cli(ctx, **options):
                     continue
                 storage_dir = os.path.join(libdeps_dir, env)
                 ctx.meta[CTX_META_STORAGE_DIRS_KEY].append(storage_dir)
-                ctx.meta[CTX_META_STORAGE_LIBDEPS_KEY][storage_dir] = config.get(
-                    "env:" + env, "lib_deps", []
-                )
+                ctx.meta[CTX_META_STORAGE_LIBDEPS_KEY][
+                    storage_dir
+                ] = config.get(f"env:{env}", "lib_deps", [])
 
 
 @cli.command("install", short_help="Install library")
@@ -180,12 +180,13 @@ def _save_deps(ctx, pkgs, action="add"):
                     name=pkg.metadata.spec.name,
                     requirements=spec.requirements
                     or (
-                        ("^%s" % pkg.metadata.version)
-                        if not pkg.metadata.version.build
-                        else pkg.metadata.version
+                        pkg.metadata.version
+                        if pkg.metadata.version.build
+                        else f"^{pkg.metadata.version}"
                     ),
                 )
             )
+
 
     input_dirs = ctx.meta.get(CTX_META_INPUT_DIRS_KEY, [])
     project_environments = ctx.meta[CTX_META_PROJECT_ENVIRONMENTS_KEY]
@@ -452,20 +453,17 @@ def lib_show(library, json_output):
 
     click.secho("ID: %d" % lib["id"])
     click.echo(
-        "Version: %s, released %s"
-        % (
-            lib["version"]["name"],
-            time.strftime("%c", util.parse_date(lib["version"]["released"])),
-        )
+        f'Version: {lib["version"]["name"]}, released {time.strftime("%c", util.parse_date(lib["version"]["released"]))}'
     )
-    click.echo("Manifest: %s" % lib["confurl"])
+
+    click.echo(f'Manifest: {lib["confurl"]}')
     for key in ("homepage", "repository", "license"):
         if key not in lib or not lib[key]:
             continue
         if isinstance(lib[key], list):
-            click.echo("%s: %s" % (key.title(), ", ".join(lib[key])))
+            click.echo(f'{key.title()}: {", ".join(lib[key])}')
         else:
-            click.echo("%s: %s" % (key.title(), lib[key]))
+            click.echo(f"{key.title()}: {lib[key]}")
 
     blocks = []
 
@@ -476,7 +474,7 @@ def lib_show(library, json_output):
             if not author.get(key):
                 continue
             if key == "email":
-                _data.append("<%s>" % author[key])
+                _data.append(f"<{author[key]}>")
             elif key == "maintainer":
                 _data.append("(maintainer)")
             else:
@@ -486,30 +484,31 @@ def lib_show(library, json_output):
         blocks.append(("Authors", _authors))
 
     blocks.append(("Keywords", lib["keywords"]))
-    for key in ("frameworks", "platforms"):
-        if key not in lib or not lib[key]:
-            continue
-        blocks.append(("Compatible %s" % key, [i["title"] for i in lib[key]]))
-    blocks.append(("Headers", lib["headers"]))
-    blocks.append(("Examples", lib["examples"]))
-    blocks.append(
-        (
-            "Versions",
-            [
-                "%s, released %s"
-                % (v["name"], time.strftime("%c", util.parse_date(v["released"])))
-                for v in lib["versions"]
-            ],
-        )
+    blocks.extend(
+        (f"Compatible {key}", [i["title"] for i in lib[key]])
+        for key in ("frameworks", "platforms")
+        if key in lib and lib[key]
     )
-    blocks.append(
+
+    blocks.extend(
         (
-            "Unique Downloads",
-            [
-                "Today: %s" % lib["dlstats"]["day"],
-                "Week: %s" % lib["dlstats"]["week"],
-                "Month: %s" % lib["dlstats"]["month"],
-            ],
+            ("Headers", lib["headers"]),
+            ("Examples", lib["examples"]),
+            (
+                "Versions",
+                [
+                    f'{v["name"]}, released {time.strftime("%c", util.parse_date(v["released"]))}'
+                    for v in lib["versions"]
+                ],
+            ),
+            (
+                "Unique Downloads",
+                [
+                    f'Today: {lib["dlstats"]["day"]}',
+                    f'Week: {lib["dlstats"]["week"]}',
+                    f'Month: {lib["dlstats"]["month"]}',
+                ],
+            ),
         )
     )
 
@@ -545,15 +544,20 @@ def lib_stats(json_output):
             (
                 click.style(item["name"], fg="cyan"),
                 time.strftime("%c", util.parse_date(item["date"])),
-                "https://platformio.org/lib/show/%s/%s"
-                % (item["id"], quote(item["name"])),
+                f'https://platformio.org/lib/show/{item["id"]}/{quote(item["name"])}',
             )
             for item in result.get(key, [])
         ]
+
         table = tabulate(
             tabular_data,
-            headers=[click.style("RECENTLY " + key.upper(), bold=True), "Date", "URL"],
+            headers=[
+                click.style(f"RECENTLY {key.upper()}", bold=True),
+                "Date",
+                "URL",
+            ],
         )
+
         click.echo(table)
         click.echo()
 
@@ -561,10 +565,12 @@ def lib_stats(json_output):
         tabular_data = [
             (
                 click.style(name, fg="cyan"),
-                "https://platformio.org/lib/search?query=" + quote("keyword:%s" % name),
+                "https://platformio.org/lib/search?query="
+                + quote(f"keyword:{name}"),
             )
             for name in result.get(key, [])
         ]
+
         table = tabulate(
             tabular_data,
             headers=[
@@ -582,15 +588,19 @@ def lib_stats(json_output):
         tabular_data = [
             (
                 click.style(item["name"], fg="cyan"),
-                "https://platformio.org/lib/show/%s/%s"
-                % (item["id"], quote(item["name"])),
+                f'https://platformio.org/lib/show/{item["id"]}/{quote(item["name"])}',
             )
             for item in result.get(key, [])
         ]
+
         table = tabulate(
             tabular_data,
-            headers=[click.style("FEATURED: " + title.upper(), bold=True), "URL"],
+            headers=[
+                click.style(f"FEATURED: {title.upper()}", bold=True),
+                "URL",
+            ],
         )
+
         click.echo(table)
         click.echo()
 
@@ -619,9 +629,9 @@ def print_lib_item(item):
         if key not in item or not item[key]:
             continue
         if isinstance(item[key], list):
-            click.echo("%s: %s" % (key.title(), ", ".join(item[key])))
+            click.echo(f'{key.title()}: {", ".join(item[key])}')
         else:
-            click.echo("%s: %s" % (key.title(), item[key]))
+            click.echo(f"{key.title()}: {item[key]}")
 
     for key in ("frameworks", "platforms"):
         if key not in item:
@@ -647,5 +657,5 @@ def print_lib_item(item):
         )
 
     if "__src_url" in item:
-        click.secho("Source: %s" % item["__src_url"])
+        click.secho(f'Source: {item["__src_url"]}')
     click.echo()

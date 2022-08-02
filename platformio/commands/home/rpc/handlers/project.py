@@ -191,7 +191,7 @@ class ProjectRPC:
             os.makedirs(project_dir)
         args = ["init", "--board", board]
         if framework:
-            args.extend(["--project-option", "framework = %s" % framework])
+            args.extend(["--project-option", f"framework = {framework}"])
         if (
             state["storage"]["coreCaller"]
             and state["storage"]["coreCaller"] in ProjectGenerator.get_supported_ides()
@@ -254,9 +254,7 @@ class ProjectRPC:
         with fs.cd(project_dir):
             config = ProjectConfig()
             src_dir = config.get("platformio", "src_dir")
-            main_path = os.path.join(
-                src_dir, "main.%s" % ("cpp" if is_cpp_project else "c")
-            )
+            main_path = os.path.join(src_dir, f'main.{"cpp" if is_cpp_project else "c"}')
             if os.path.isfile(main_path):
                 return project_dir
             if not os.path.isdir(src_dir):
@@ -276,15 +274,17 @@ class ProjectRPC:
             os.path.isfile(
                 os.path.join(
                     arduino_project_dir,
-                    "%s.%s" % (os.path.basename(arduino_project_dir), ext),
+                    f"{os.path.basename(arduino_project_dir)}.{ext}",
                 )
             )
             for ext in ("ino", "pde")
         )
+
         if not is_arduino_project:
             raise JSONRPC20DispatchException(
-                code=4000, message="Not an Arduino project: %s" % arduino_project_dir
+                code=4000, message=f"Not an Arduino project: {arduino_project_dir}"
             )
+
 
         state = AppRPC.load_state()
         project_dir = os.path.join(
@@ -292,8 +292,7 @@ class ProjectRPC:
         )
         if not os.path.isdir(project_dir):
             os.makedirs(project_dir)
-        args = ["init", "--board", board]
-        args.extend(["--project-option", "framework = arduino"])
+        args = ["init", "--board", board, "--project-option", "framework = arduino"]
         if use_arduino_libs:
             args.extend(
                 ["--project-option", "lib_extra_dirs = ~/Documents/Arduino/libraries"]
@@ -318,8 +317,9 @@ class ProjectRPC:
     async def import_pio(project_dir):
         if not project_dir or not is_platformio_project(project_dir):
             raise JSONRPC20DispatchException(
-                code=4001, message="Not an PlatformIO project: %s" % project_dir
+                code=4001, message=f"Not an PlatformIO project: {project_dir}"
             )
+
         new_project_dir = os.path.join(
             AppRPC.load_state()["storage"]["projectsDir"],
             time.strftime("%y%m%d-%H%M%S-") + os.path.basename(project_dir),

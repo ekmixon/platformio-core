@@ -55,8 +55,7 @@ def access_public(urn, urn_type):
     client = RegistryClient()
     client.update_resource(urn=urn, private=0)
     return click.secho(
-        "The resource %s has been successfully updated." % urn,
-        fg="green",
+        f"The resource {urn} has been successfully updated.", fg="green"
     )
 
 
@@ -70,8 +69,7 @@ def access_private(urn, urn_type):
     client = RegistryClient()
     client.update_resource(urn=urn, private=1)
     return click.secho(
-        "The resource %s has been successfully updated." % urn,
-        fg="green",
+        f"The resource {urn} has been successfully updated.", fg="green"
     )
 
 
@@ -91,8 +89,7 @@ def access_grant(level, client, urn, urn_type):
     reg_client = RegistryClient()
     reg_client.grant_access_for_resource(urn=urn, client=client, level=level)
     return click.secho(
-        "Access for resource %s has been granted for %s" % (urn, client),
-        fg="green",
+        f"Access for resource {urn} has been granted for {client}", fg="green"
     )
 
 
@@ -111,8 +108,7 @@ def access_revoke(client, urn, urn_type):
     reg_client = RegistryClient()
     reg_client.revoke_access_from_resource(urn=urn, client=client)
     return click.secho(
-        "Access for resource %s has been revoked for %s" % (urn, client),
-        fg="green",
+        f"Access for resource {urn} has been revoked for {client}", fg="green"
     )
 
 
@@ -131,8 +127,7 @@ def access_list(owner, urn_type, json_output):
         click.echo()
         click.secho(resource.get("name"), fg="cyan")
         click.echo("-" * len(resource.get("name")))
-        table_data = []
-        table_data.append(("URN:", resource.get("urn")))
+        table_data = [("URN:", resource.get("urn"))]
         table_data.append(("Owner:", resource.get("owner")))
         table_data.append(
             (

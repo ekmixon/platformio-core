@@ -35,7 +35,7 @@ SRC_ASM_EXT = ["S", "spp", "SPP", "sx", "s", "asm", "ASM"]
 SRC_C_EXT = ["c"]
 SRC_CXX_EXT = ["cc", "cpp", "cxx", "c++"]
 SRC_BUILD_EXT = SRC_C_EXT + SRC_CXX_EXT + SRC_ASM_EXT
-SRC_FILTER_DEFAULT = ["+<*>", "-<.git%s>" % os.sep, "-<.svn%s>" % os.sep]
+SRC_FILTER_DEFAULT = ["+<*>", f"-<.git{os.sep}>", f"-<.svn{os.sep}>"]
 
 
 def scons_patched_match_splitext(path, suffixes=None):
@@ -49,10 +49,8 @@ def scons_patched_match_splitext(path, suffixes=None):
 def GetBuildType(env):
     return (
         "debug"
-        if (
-            set(["__debug", "sizedata"]) & set(COMMAND_LINE_TARGETS)
-            or env.GetProjectOption("build_type") == "debug"
-        )
+        if {"__debug", "sizedata"} & set(COMMAND_LINE_TARGETS)
+        or env.GetProjectOption("build_type") == "debug"
         else "release"
     )
 
@@ -62,7 +60,9 @@ def BuildProgram(env):
     env.ProcessProjectDeps()
 
     # append into the beginning a main LD script
-    if env.get("LDSCRIPT_PATH") and not any("-Wl,-T" in f for f in env["LINKFLAGS"]):
+    if env.get("LDSCRIPT_PATH") and all(
+        "-Wl,-T" not in f for f in env["LINKFLAGS"]
+    ):
         env.Prepend(LINKFLAGS=["-T", env.subst("$LDSCRIPT_PATH")])
 
     # enable "cyclic reference" for linker
@@ -88,7 +88,7 @@ def BuildProgram(env):
         )
     )
 
-    print("Building in %s mode" % env.GetBuildType())
+    print(f"Building in {env.GetBuildType()} mode")
 
     return program
 
@@ -222,19 +222,16 @@ def ProcessFlags(env, flags):  # pylint: disable=too-many-branches
         return
     env.Append(**env.ParseFlagsExtended(flags))
 
-    # Cancel any previous definition of name, either built in or
-    # provided with a -U option // Issue #191
-    undefines = [
+    if undefines := [
         u
         for u in env.get("CCFLAGS", [])
         if isinstance(u, string_types) and u.startswith("-U")
-    ]
-    if undefines:
+    ]:
         for undef in undefines:
             env["CCFLAGS"].remove(undef)
             if undef[2:] in env["CPPDEFINES"]:
                 env["CPPDEFINES"].remove(undef[2:])
-        env.Append(_CPPDEFFLAGS=" %s" % " ".join(undefines))
+        env.Append(_CPPDEFFLAGS=f' {" ".join(undefines)}')
 
 
 def ProcessUnFlags(env, flags):

@@ -30,7 +30,7 @@ class LogToFile(DeviceMonitorFilter):
         log_file_name = "platformio-device-monitor-%s.log" % datetime.now().strftime(
             "%y%m%d-%H%M%S"
         )
-        print("--- Logging an output to %s" % os.path.abspath(log_file_name))
+        print(f"--- Logging an output to {os.path.abspath(log_file_name)}")
         # pylint: disable=consider-using-with
         self._log_fp = io.open(log_file_name, "w", encoding="utf-8")
         return self

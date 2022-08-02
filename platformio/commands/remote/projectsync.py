@@ -62,7 +62,7 @@ class ProjectSync(object):
     def _insert_to_db(self, path, relpath):
         if not isfile(path):
             return
-        index_hash = "%s-%s-%s" % (relpath, getmtime(path), getsize(path))
+        index_hash = f"{relpath}-{getmtime(path)}-{getsize(path)}"
         index = crc32(hashlib_encode_data(index_hash))
         self._db[index] = (path, relpath)
 
@@ -89,10 +89,7 @@ class ProjectSync(object):
                 if not dirs and not files and root != item[0]:
                     deleted = True
                     os.rmdir(root)
-        if deleted:
-            return self.delete_empty_folders()
-
-        return True
+        return self.delete_empty_folders() if deleted else True
 
     def compress_items(self, fileobj, dbindex, max_size):
         compressed = []

@@ -79,10 +79,10 @@ def calculate_file_hashsum(algorithm, path):
     h = hashlib.new(algorithm)
     with io.open(path, "rb", buffering=0) as fp:
         while True:
-            chunk = fp.read(io.DEFAULT_BUFFER_SIZE)
-            if not chunk:
+            if chunk := fp.read(io.DEFAULT_BUFFER_SIZE):
+                h.update(chunk)
+            else:
                 break
-            h.update(chunk)
     return h.hexdigest()
 
 
@@ -139,10 +139,7 @@ def ensure_udev_rules():
 def path_endswith_ext(path, extensions):
     if not isinstance(extensions, (list, tuple)):
         extensions = [extensions]
-    for ext in extensions:
-        if path.endswith("." + ext):
-            return True
-    return False
+    return any(path.endswith(f".{ext}") for ext in extensions)
 
 
 def match_src_files(src_dir, src_filter=None, src_exts=None, followlinks=True):
@@ -176,9 +173,7 @@ def match_src_files(src_dir, src_filter=None, src_exts=None, followlinks=True):
 
 
 def to_unix_path(path):
-    if not IS_WINDOWS or not path:
-        return path
-    return re.sub(r"[\\]+", "/", path)
+    return path if not IS_WINDOWS or not path else re.sub(r"[\\]+", "/", path)
 
 
 def expanduser(path):

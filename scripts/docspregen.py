@@ -60,7 +60,7 @@ def campaign_url(url, source="platformio.org", medium="docs"):
     query = data.query
     if query:
         query += "&"
-    query += "utm_source=%s&utm_medium=%s" % (source, medium)
+    query += f"utm_source={source}&utm_medium={medium}"
     return urlunparse(
         ParseResult(
             data.scheme, data.netloc, data.path, data.params, query, data.fragment
@@ -78,14 +78,10 @@ def generate_boards_table(boards, skip_columns=None):
         ("Flash", "{rom}"),
         ("RAM", "{ram}"),
     ]
-    lines = []
-    lines.append(
-        """
+    lines = ["""
 .. list-table::
     :header-rows:  1
-"""
-    )
-
+"""]
     # add header
     for (name, template) in columns:
         if skip_columns and name in skip_columns:
@@ -129,8 +125,7 @@ def generate_boards_table(boards, skip_columns=None):
 def generate_frameworks_contents(frameworks):
     if not frameworks:
         return []
-    lines = []
-    lines.append(
+    lines = [
         """
 Frameworks
 ----------
@@ -139,7 +134,8 @@ Frameworks
 
     * - Name
       - Description"""
-    )
+    ]
+
     known = set()
     for framework in API_FRAMEWORKS:
         known.add(framework["name"])
@@ -153,15 +149,14 @@ Frameworks
             )
         )
     if set(frameworks) - known:
-        click.secho("Unknown frameworks %s " % (set(frameworks) - known), fg="red")
+        click.secho(f"Unknown frameworks {set(frameworks) - known} ", fg="red")
     return lines
 
 
 def generate_platforms_contents(platforms):
     if not platforms:
         return []
-    lines = []
-    lines.append(
+    lines = [
         """
 Platforms
 ---------
@@ -170,7 +165,7 @@ Platforms
 
     * - Name
       - Description"""
-    )
+    ]
 
     for name in sorted(platforms):
         p = PlatformFactory.new(name)
@@ -211,7 +206,7 @@ Debugging
 """
     )
     if extra_rst:
-        lines.append(".. include:: %s" % extra_rst)
+        lines.append(f".. include:: {extra_rst}")
 
     lines.append(
         """
@@ -262,23 +257,21 @@ Please click on board name for the further details.
 def generate_packages(platform, packagenames, is_embedded):
     if not packagenames:
         return
-    lines = []
-    lines.append(
+    lines = [
         """
 Packages
 --------
-"""
-    )
-    lines.append(
+""",
         """.. list-table::
     :header-rows:  1
 
     * - Name
-      - Description"""
-    )
+      - Description""",
+    ]
+
     for name in sorted(packagenames):
         if name not in API_PACKAGES:
-            click.secho("Unknown package `%s`" % name, fg="red")
+            click.secho(f"Unknown package `{name}`", fg="red")
             lines.append(
                 """
     * - {name}
@@ -337,66 +330,63 @@ Packages
 
 
 def generate_platform(name, rst_dir):
-    print("Processing platform: %s" % name)
+    print(f"Processing platform: {name}")
 
     compatible_boards = [board for board in BOARDS if name == board["platform"]]
 
-    lines = []
+    lines = [RST_COPYRIGHT]
 
-    lines.append(RST_COPYRIGHT)
     p = PlatformFactory.new(name)
     assert p.repository_url.endswith(".git")
     github_url = p.repository_url[:-4]
 
-    lines.append(".. _platform_%s:" % p.name)
-    lines.append("")
-
+    lines.extend((f".. _platform_{p.name}:", ""))
     lines.append(p.title)
-    lines.append("=" * len(p.title))
-    lines.append("")
-    lines.append(":Configuration:")
-    lines.append("  :ref:`projectconf_env_platform` = ``%s``" % p.name)
-    lines.append("")
+    lines.extend(("=" * len(p.title), "", ":Configuration:"))
+    lines.extend((f"  :ref:`projectconf_env_platform` = ``{p.name}``", ""))
     lines.append(p.description)
-    lines.append(
-        """
+    lines.extend(
+        (
+            """
 For more detailed information please visit `vendor site <%s>`_."""
-        % campaign_url(p.homepage)
-    )
-    lines.append(
-        """
+            % campaign_url(p.homepage),
+            """
 .. contents:: Contents
     :local:
     :depth: 1
-"""
+""",
+        )
     )
 
     #
     # Extra
     #
-    if isfile(join(rst_dir, "%s_extra.rst" % name)):
-        lines.append(".. include:: %s_extra.rst" % p.name)
+    if isfile(join(rst_dir, f"{name}_extra.rst")):
+        lines.append(f".. include:: {p.name}_extra.rst")
 
     #
     # Examples
     #
     lines.append(
-        """
+        (
+            """
 Examples
 --------
 
 Examples are listed from `%s development platform repository <%s>`_:
 """
-        % (p.title, campaign_url("%s/tree/master/examples" % github_url))
+            % (p.title, campaign_url(f"{github_url}/tree/master/examples"))
+        )
     )
+
     examples_dir = join(p.get_dir(), "examples")
     if isdir(examples_dir):
         for eitem in os.listdir(examples_dir):
             example_dir = join(examples_dir, eitem)
             if not isdir(example_dir) or not os.listdir(example_dir):
                 continue
-            url = "%s/tree/master/examples/%s" % (github_url, eitem)
-            lines.append("* `%s <%s>`_" % (eitem, campaign_url(url)))
+            url = f"{github_url}/tree/master/examples/{eitem}"
+            lines.append(f"* `{eitem} <{campaign_url(url)}>`_")
 
     #
     # Debugging
@@ -406,11 +396,12 @@ Examples are listed from `%s development platform repository <%s>`_:
             generate_debug_contents(
                 compatible_boards,
                 skip_board_columns=["Platform"],
-                extra_rst="%s_debug.rst" % name
-                if isfile(join(rst_dir, "%s_debug.rst" % name))
+                extra_rst=f"{name}_debug.rst"
+                if isfile(join(rst_dir, f"{name}_debug.rst"))
                 else None,
             )
         )
+
 
     #
     # Development version of dev/platform
@@ -452,20 +443,20 @@ Upstream
         )
     )
 
-    #
-    # Packages
-    #
-    _packages_content = generate_packages(name, p.packages.keys(), p.is_embedded())
-    if _packages_content:
+    if _packages_content := generate_packages(
+        name, p.packages.keys(), p.is_embedded()
+    ):
         lines.append(_packages_content)
 
     #
     # Frameworks
     #
-    compatible_frameworks = []
-    for framework in API_FRAMEWORKS:
-        if is_compat_platform_and_framework(name, framework["name"]):
-            compatible_frameworks.append(framework["name"])
+    compatible_frameworks = [
+        framework["name"]
+        for framework in API_FRAMEWORKS
+        if is_compat_platform_and_framework(name, framework["name"])
+    ]
+
     lines.extend(generate_frameworks_contents(compatible_frameworks))
 
     #
@@ -492,8 +483,7 @@ Boards
         )
 
         for vendor, boards in sorted(vendors.items()):
-            lines.append(str(vendor))
-            lines.append("~" * len(vendor))
+            lines.extend((str(vendor), "~" * len(vendor)))
             lines.extend(generate_boards_table(boards, skip_columns=["Platform"]))
 
     return "\n".join(lines)
@@ -503,13 +493,13 @@ def update_platform_docs():
     for manifest in PLATFORM_MANIFESTS:
         name = manifest["name"]
         platforms_dir = join(DOCS_ROOT_DIR, "platforms")
-        rst_path = join(platforms_dir, "%s.rst" % name)
+        rst_path = join(platforms_dir, f"{name}.rst")
         with open(rst_path, "w") as f:
             f.write(generate_platform(name, platforms_dir))
 
 
 def generate_framework(type_, data, rst_dir=None):
-    print("Processing framework: %s" % type_)
+    print(f"Processing framework: {type_}")
 
     compatible_platforms = [
         m
@@ -518,36 +508,33 @@ def generate_framework(type_, data, rst_dir=None):
     ]
     compatible_boards = [board for board in BOARDS if type_ in board["frameworks"]]
 
-    lines = []
-
-    lines.append(RST_COPYRIGHT)
-    lines.append(".. _framework_%s:" % type_)
-    lines.append("")
-
-    lines.append(data["title"])
-    lines.append("=" * len(data["title"]))
-    lines.append("")
-    lines.append(":Configuration:")
-    lines.append("  :ref:`projectconf_env_framework` = ``%s``" % type_)
-    lines.append("")
-    lines.append(data["description"])
-    lines.append(
-        """
+    lines = [
+        RST_COPYRIGHT,
+        f".. _framework_{type_}:",
+        "",
+        data["title"],
+        "=" * len(data["title"]),
+        "",
+        ":Configuration:",
+        f"  :ref:`projectconf_env_framework` = ``{type_}``",
+        "",
+        data["description"],
+        (
+            """
 For more detailed information please visit `vendor site <%s>`_.
 """
-        % campaign_url(data["url"])
-    )
-
-    lines.append(
+            % campaign_url(data["url"])
+        ),
         """
 .. contents:: Contents
     :local:
-    :depth: 1"""
-    )
+    :depth: 1""",
+    ]
+
 
     # Extra
-    if isfile(join(rst_dir, "%s_extra.rst" % type_)):
-        lines.append(".. include:: %s_extra.rst" % type_)
+    if isfile(join(rst_dir, f"{type_}_extra.rst")):
+        lines.append(f".. include:: {type_}_extra.rst")
 
     #
     # Debugging
@@ -556,11 +543,12 @@ For more detailed information please visit `vendor site <%s>`_.
         lines.extend(
             generate_debug_contents(
                 compatible_boards,
-                extra_rst="%s_debug.rst" % type_
-                if isfile(join(rst_dir, "%s_debug.rst" % type_))
+                extra_rst=f"{type_}_debug.rst"
+                if isfile(join(rst_dir, f"{type_}_debug.rst"))
                 else None,
             )
         )
+
 
     if compatible_platforms:
         # examples
@@ -573,13 +561,9 @@ Examples
         for manifest in compatible_platforms:
             p = PlatformFactory.new(manifest["name"])
             lines.append(
-                "* `%s for %s <%s>`_"
-                % (
-                    data["title"],
-                    manifest["title"],
-                    campaign_url("%s/tree/master/examples" % p.repository_url[:-4]),
-                )
+                f'* `{data["title"]} for {manifest["title"]} <{campaign_url(f"{p.repository_url[:-4]}/tree/master/examples")}>`_'
             )
+
 
         # Platforms
         lines.extend(
@@ -609,8 +593,7 @@ Boards
 """
         )
         for vendor, boards in sorted(vendors.items()):
-            lines.append(str(vendor))
-            lines.append("~" * len(vendor))
+            lines.extend((str(vendor), "~" * len(vendor)))
             lines.extend(generate_boards_table(boards))
     return "\n".join(lines)
 
@@ -619,23 +602,19 @@ def update_framework_docs():
     for framework in API_FRAMEWORKS:
         name = framework["name"]
         frameworks_dir = join(DOCS_ROOT_DIR, "frameworks")
-        rst_path = join(frameworks_dir, "%s.rst" % name)
+        rst_path = join(frameworks_dir, f"{name}.rst")
         with open(rst_path, "w") as f:
             f.write(generate_framework(name, framework, frameworks_dir))
 
 
 def update_boards():
     print("Updating boards...")
-    lines = []
-
-    lines.append(RST_COPYRIGHT)
-    lines.append(".. _boards:")
-    lines.append("")
-
-    lines.append("Boards")
-    lines.append("======")
-
-    lines.append(
+    lines = [
+        RST_COPYRIGHT,
+        ".. _boards:",
+        "",
+        "Boards",
+        "======",
         """
 Rapid Embedded Development, Continuous and IDE integration in a few
 steps with PlatformIO thanks to built-in project generator for the most
@@ -645,8 +624,9 @@ popular embedded boards and IDE.
     * You can list pre-configured boards by :ref:`cmd_boards` command or
       `PlatformIO Boards Explorer <https://platformio.org/boards>`_
     * For more detailed ``board`` information please scroll tables below by horizontal.
-"""
-    )
+""",
+    ]
+
 
     platforms = {}
     for data in BOARDS:
@@ -659,15 +639,18 @@ popular embedded boards and IDE.
     for platform, boards in sorted(platforms.items()):
         p = PlatformFactory.new(platform)
         lines.append(p.title)
-        lines.append("-" * len(p.title))
-        lines.append(
-            """
+        lines.extend(
+            ("-" * len(p.title), """
 .. toctree::
     :maxdepth: 1
-        """
+        """)
         )
-        for board in sorted(boards, key=lambda item: item["name"]):
-            lines.append("    %s/%s" % (platform, board["id"]))
+
+        lines.extend(
+            f'    {platform}/{board["id"]}'
+            for board in sorted(boards, key=lambda item: item["name"])
+        )
+
         lines.append("")
 
     emboards_rst = join(DOCS_ROOT_DIR, "boards", "index.rst")
@@ -678,9 +661,7 @@ popular embedded boards and IDE.
     for data in BOARDS:
         # if data['id'] != "m5stack-core-esp32":
         #     continue
-        rst_path = join(
-            DOCS_ROOT_DIR, "boards", data["platform"], "%s.rst" % data["id"]
-        )
+        rst_path = join(DOCS_ROOT_DIR, "boards", data["platform"], f'{data["id"]}.rst')
         if not isdir(dirname(rst_path)):
             os.makedirs(dirname(rst_path))
         update_embedded_board(rst_path, data)
@@ -694,7 +675,7 @@ def update_embedded_board(rst_path, board):
     assert board_manifest_url
     if board_manifest_url.endswith(".git"):
         board_manifest_url = board_manifest_url[:-4]
-    board_manifest_url += "/blob/master/boards/%s.json" % board["id"]
+    board_manifest_url += f'/blob/master/boards/{board["id"]}.json'
 
     variables = dict(
         id=board["id"],
@@ -705,7 +686,7 @@ def update_embedded_board(rst_path, board):
         mcu=board_config.get("build", {}).get("mcu", ""),
         mcu_upper=board["mcu"].upper(),
         f_cpu=board["fcpu"],
-        f_cpu_mhz=int(int(board["fcpu"]) / 1000000),
+        f_cpu_mhz=int(board["fcpu"]) // 1000000,
         ram=fs.humanize_file_size(board["ram"]),
         rom=fs.humanize_file_size(board["rom"]),
         vendor=board["vendor"],
@@ -713,12 +694,13 @@ def update_embedded_board(rst_path, board):
         upload_protocol=board_config.get("upload.protocol", ""),
     )
 
-    lines = [RST_COPYRIGHT]
-    lines.append(".. _board_{platform}_{id}:".format(**variables))
-    lines.append("")
-    lines.append(board["name"])
-    lines.append("=" * len(board["name"]))
-    lines.append(
+
+    lines = [
+        RST_COPYRIGHT,
+        ".. _board_{platform}_{id}:".format(**variables),
+        "",
+        board["name"],
+        "=" * len(board["name"]),
         """
 .. contents::
 
@@ -741,13 +723,7 @@ Platform :ref:`platform_{platform}`: {platform_description}
     - `{vendor} <{url}>`__
 """.format(
             **variables
-        )
-    )
-
-    #
-    # Configuration
-    #
-    lines.append(
+        ),
         """
 Configuration
 -------------
@@ -778,8 +754,8 @@ board manifest `{id}.json <{board_manifest_url}>`_. For example,
   board_build.f_cpu = {f_cpu}L
 """.format(
             **variables
-        )
-    )
+        ),
+    ]
 
     #
     # Uploading
@@ -794,8 +770,7 @@ Uploading
 """
             % board["name"]
         )
-        for protocol in sorted(upload_protocols):
-            lines.append("* ``%s``" % protocol)
+        lines.extend(f"* ``{protocol}``" for protocol in sorted(upload_protocols))
         lines.append(
             """
 Default protocol is ``%s``"""
@@ -817,11 +792,7 @@ You can change upload protocol using :ref:`projectconf_upload_protocol` option:
             )
         )
 
-    #
-    # Debugging
-    #
-    lines.append("Debugging")
-    lines.append("---------")
+    lines.extend(("Debugging", "---------"))
     if not board.get("debug"):
         lines.append(
             ":ref:`piodebug` currently does not support {name} board.".format(
@@ -868,16 +839,16 @@ You can switch between debugging :ref:`debugging_tools` using
     - On-board
     - Default"""
         )
-        for (tool_name, tool_data) in sorted(board["debug"]["tools"].items()):
-            lines.append(
-                """  * - :ref:`debugging_tool_{name}`
+        lines.extend(
+            """  * - :ref:`debugging_tool_{name}`
     - {onboard}
     - {default}""".format(
-                    name=tool_name,
-                    onboard="Yes" if tool_data.get("onboard") else "",
-                    default="Yes" if tool_name == default_debug_tool else "",
-                )
+                name=tool_name,
+                onboard="Yes" if tool_data.get("onboard") else "",
+                default="Yes" if tool_name == default_debug_tool else "",
             )
+            for tool_name, tool_data in sorted(board["debug"]["tools"].items())
+        )
 
     if board["frameworks"]:
         lines.extend(generate_frameworks_contents(board["frameworks"]))
@@ -931,8 +902,7 @@ Boards
 """
     )
     for vendor, boards in sorted(vendors.items()):
-        lines.append(str(vendor))
-        lines.append("~" * len(vendor))
+        lines.extend((str(vendor), "~" * len(vendor)))
         lines.extend(generate_boards_table(boards))
 
     # save
@@ -948,9 +918,9 @@ Boards
 
     # Debug tools
     for tool, platforms in tool_to_platforms.items():
-        tool_path = join(DOCS_ROOT_DIR, "plus", "debug-tools", "%s.rst" % tool)
+        tool_path = join(DOCS_ROOT_DIR, "plus", "debug-tools", f"{tool}.rst")
         if not isfile(tool_path):
-            click.secho("Unknown debug tool `%s`" % tool, fg="red")
+            click.secho(f"Unknown debug tool `{tool}`", fg="red")
             continue
         platforms = sorted(set(platforms))
 
@@ -958,9 +928,12 @@ Boards
         lines.extend(generate_platforms_contents(platforms))
         tool_frameworks = []
         for platform in platforms:
-            for framework in frameworks:
-                if is_compat_platform_and_framework(platform, framework):
-                    tool_frameworks.append(framework)
+            tool_frameworks.extend(
+                framework
+                for framework in frameworks
+                if is_compat_platform_and_framework(platform, framework)
+            )
+
         lines.extend(generate_frameworks_contents(tool_frameworks))
 
         lines.append(

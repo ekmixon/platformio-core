@@ -29,10 +29,10 @@ class AgentListClient(RemoteClientBase):
         for item in result:
             click.secho(item["name"], fg="cyan")
             click.echo("-" * len(item["name"]))
-            click.echo("ID: %s" % item["id"])
+            click.echo(f'ID: {item["id"]}')
             click.echo(
-                "Started: %s"
-                % datetime.fromtimestamp(item["started"]).strftime("%Y-%m-%d %H:%M:%S")
+                f'Started: {datetime.fromtimestamp(item["started"]).strftime("%Y-%m-%d %H:%M:%S")}'
             )
+
             click.echo("")
         self.disconnect()

@@ -92,7 +92,7 @@ command_strings = dict(
 )
 if not int(ARGUMENTS.get("PIOVERBOSE", 0)):
     for name, value in command_strings.items():
-        DEFAULT_ENV_OPTIONS["%sSTR" % name] = "%s $TARGET" % (value)
+        DEFAULT_ENV_OPTIONS[f"{name}STR"] = f"{value} $TARGET"
 
 env = DefaultEnvironment(**DEFAULT_ENV_OPTIONS)
 
@@ -190,8 +190,8 @@ for item in env.GetExtraScripts("post"):
 ##############################################################################
 
 # Checking program size
-if env.get("SIZETOOL") and not (
-    set(["nobuild", "sizedata"]) & set(COMMAND_LINE_TARGETS)
+if env.get("SIZETOOL") and not {"nobuild", "sizedata"} & set(
+    COMMAND_LINE_TARGETS
 ):
     env.Depends(["upload", "program"], "checkprogsize")
     # Replace platform's "size" target with our
@@ -221,7 +221,7 @@ if "envdump" in COMMAND_LINE_TARGETS:
     click.echo(env.Dump())
     env.Exit(0)
 
-if set(["_idedata", "idedata"]) & set(COMMAND_LINE_TARGETS):
+if {"_idedata", "idedata"} & set(COMMAND_LINE_TARGETS):
     try:
         Import("projenv")
     except:  # pylint: disable=bare-except

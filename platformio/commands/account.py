@@ -124,7 +124,7 @@ def account_token(password, regenerate, json_output):
     auth_token = client.auth_token(password, regenerate)
     if json_output:
         return click.echo(json.dumps({"status": "success", "result": auth_token}))
-    return click.secho("Personal Authentication Token: %s" % auth_token, fg="green")
+    return click.secho(f"Personal Authentication Token: {auth_token}", fg="green")
 
 
 @cli.command("forgot", short_help="Forgot password")
@@ -241,7 +241,6 @@ def print_packages(packages):
         click.echo("-" * len(package.get("name")))
         if package.get("description"):
             click.echo(package.get("description"))
-        data = []
         expire = "-"
         if "subscription" in package:
             expire = datetime.datetime.strptime(
@@ -251,7 +250,7 @@ def print_packages(packages):
                 ),
                 "%Y-%m-%dT%H:%M:%SZ",
             ).strftime("%Y-%m-%d")
-        data.append(("Expire:", expire))
+        data = [("Expire:", expire)]
         services = []
         for key in package:
             if not key.startswith("service."):

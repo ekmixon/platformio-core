@@ -52,11 +52,12 @@ class LibBuilderFactory(object):
             clsname = "PlatformIOLibBuilder"
         else:
             used_frameworks = LibBuilderFactory.get_used_frameworks(env, path)
-            common_frameworks = set(env.get("PIOFRAMEWORK", [])) & set(used_frameworks)
-            if common_frameworks:
-                clsname = "%sLibBuilder" % list(common_frameworks)[0].title()
+            if common_frameworks := set(env.get("PIOFRAMEWORK", [])) & set(
+                used_frameworks
+            ):
+                clsname = f"{list(common_frameworks)[0].title()}LibBuilder"
             elif used_frameworks:
-                clsname = "%sLibBuilder" % used_frameworks[0].title()
+                clsname = f"{used_frameworks[0].title()}LibBuilder"
 
         obj = getattr(sys.modules[__name__], clsname)(env, path, verbose=verbose)
 
@@ -129,11 +130,13 @@ class LibBuilderBase(object):
         self.verbose = verbose
 
         try:
-            self._manifest = manifest if manifest else self.load_manifest()
+            self._manifest = manifest or self.load_manifest()
         except ManifestParserError:
             click.secho(
-                "Warning! Ignoring broken library manifest in " + self.path, fg="yellow"
+                f"Warning! Ignoring broken library manifest in {self.path}",
+                fg="yellow",
             )
+
             self._manifest = {}
 
         self._is_dependent = False
@@ -176,10 +179,10 @@ class LibBuilderBase(object):
     @property
     def src_filter(self):
         return piotool.SRC_FILTER_DEFAULT + [
-            "-<example%s>" % os.sep,
-            "-<examples%s>" % os.sep,
-            "-<test%s>" % os.sep,
-            "-<tests%s>" % os.sep,
+            f"-<example{os.sep}>",
+            f"-<examples{os.sep}>",
+            f"-<test{os.sep}>",
+            f"-<tests{os.sep}>",
         ]
 
     @property
@@ -200,8 +203,7 @@ class LibBuilderBase(object):
 
     def get_include_dirs(self):
         items = []
-        include_dir = self.include_dir
-        if include_dir:
+        if include_dir := self.include_dir:
             items.append(include_dir)
         items.append(self.src_dir)
         return items
@@ -210,7 +212,7 @@ class LibBuilderBase(object):
     def build_dir(self):
         lib_hash = hashlib.sha1(hashlib_encode_data(self.path)).hexdigest()[:3]
         return os.path.join(
-            "$BUILD_DIR", "lib%s" % lib_hash, os.path.basename(self.path)
+            "$BUILD_DIR", f"lib{lib_hash}", os.path.basename(self.path)
         )
 
     @property
@@ -319,8 +321,7 @@ class LibBuilderBase(object):
             os.path.join(self.src_dir, item)
             for item in self.env.MatchSourceFiles(self.src_dir, self.src_filter)
         ]
-        include_dir = self.include_dir
-        if include_dir:
+        if include_dir := self.include_dir:
             items.extend(
                 [
                     os.path.join(include_dir, item)
@@ -392,9 +393,9 @@ class LibBuilderBase(object):
                     continue
                 _f_part = _h_path[: _h_path.rindex(".")]
                 for ext in piotool.SRC_C_EXT + piotool.SRC_CXX_EXT:
-                    if not os.path.isfile("%s.%s" % (_f_part, ext)):
+                    if not os.path.isfile(f"{_f_part}.{ext}"):
                         continue
-                    _c_path = self.env.File("%s.%s" % (_f_part, ext))
+                    _c_path = self.env.File(f"{_f_part}.{ext}")
                     if _c_path not in result:
                         result.append(_c_path)
 
@@ -473,10 +474,9 @@ class LibBuilderBase(object):
 
         do_not_archive = not self.lib_archive
         if not do_not_archive:
-            nodes = self.env.CollectBuildFiles(
+            if nodes := self.env.CollectBuildFiles(
                 self.build_dir, self.src_dir, self.src_filter
-            )
-            if nodes:
+            ):
                 libs.append(
                     self.env.BuildLibrary(
                         self.build_dir, self.src_dir, self.src_filter, nodes
@@ -497,17 +497,22 @@ class UnknownLibBuilder(LibBuilderBase):
 class ArduinoLibBuilder(LibBuilderBase):
     def load_manifest(self):
         manifest_path = os.path.join(self.path, "library.properties")
-        if not os.path.isfile(manifest_path):
-            return {}
-        return ManifestParserFactory.new_from_file(manifest_path).as_dict()
+        return (
+            ManifestParserFactory.new_from_file(manifest_path).as_dict()
+            if os.path.isfile(manifest_path)
+            else {}
+        )
 
     @property
     def include_dir(self):
-        if not all(
-            os.path.isdir(os.path.join(self.path, d)) for d in ("include", "src")
-        ):
-            return None
-        return os.path.join(self.path, "include")
+        return (
+            os.path.join(self.path, "include")
+            if all(
+                os.path.isdir(os.path.join(self.path, d))
+                for d in ("include", "src")
+            )
+            else None
+        )
 
     def get_include_dirs(self):
         include_dirs = LibBuilderBase.get_include_dirs(self)
@@ -524,17 +529,13 @@ class ArduinoLibBuilder(LibBuilderBase):
             # pylint: disable=no-member
             src_filter = LibBuilderBase.src_filter.fget(self)
             for root, _, files in os.walk(src_dir, followlinks=True):
-                found = False
-                for fname in files:
-                    if fname.lower().endswith("asm"):
-                        found = True
-                        break
+                found = any(fname.lower().endswith("asm") for fname in files)
                 if not found:
                     continue
                 rel_path = root.replace(src_dir, "")
                 if rel_path.startswith(os.path.sep):
                     rel_path = rel_path[1:] + os.path.sep
-                src_filter.append("-<%s*.[aA][sS][mM]>" % rel_path)
+                src_filter.append(f"-<{rel_path}*.[aA][sS][mM]>")
             return src_filter
 
         src_filter = []
@@ -543,9 +544,9 @@ class ArduinoLibBuilder(LibBuilderBase):
             # arduino ide ignores files with .asm or .ASM extensions
             if ext.lower() == "asm":
                 continue
-            src_filter.append("+<*.%s>" % ext)
+            src_filter.append(f"+<*.{ext}>")
             if is_utility:
-                src_filter.append("+<utility%s*.%s>" % (os.path.sep, ext))
+                src_filter.append(f"+<utility{os.path.sep}*.{ext}>")
         return src_filter
 
     @property
@@ -597,9 +598,11 @@ class ArduinoLibBuilder(LibBuilderBase):
 class MbedLibBuilder(LibBuilderBase):
     def load_manifest(self):
         manifest_path = os.path.join(self.path, "module.json")
-        if not os.path.isfile(manifest_path):
-            return {}
-        return ManifestParserFactory.new_from_file(manifest_path).as_dict()
+        return (
+            ManifestParserFactory.new_from_file(manifest_path).as_dict()
+            if os.path.isfile(manifest_path)
+            else {}
+        )
 
     @property
     def src_dir(self):
@@ -620,7 +623,7 @@ class MbedLibBuilder(LibBuilderBase):
         if not self._manifest:
             for root, _, __ in os.walk(self.path):
                 part = root.replace(self.path, "").lower()
-                if any(s in part for s in ("%s." % os.path.sep, "test", "example")):
+                if any(s in part for s in (f"{os.path.sep}.", "test", "example")):
                     continue
                 if root not in include_dirs:
                     include_dirs.append(root)
@@ -654,7 +657,7 @@ class MbedLibBuilder(LibBuilderBase):
 
         macros = {}
         for mbed_lib_path in mbed_lib_paths:
-            macros.update(self._mbed_lib_conf_parse_macros(mbed_lib_path))
+            macros |= self._mbed_lib_conf_parse_macros(mbed_lib_path)
 
         self._mbed_conf_append_macros(mbed_config_path, macros)
         return True
@@ -687,7 +690,7 @@ class MbedLibBuilder(LibBuilderBase):
 
         # overrode items per target
         for target, options in manifest.get("target_overrides", {}).items():
-            if target != "*" and "TARGET_" + target not in cppdefines:
+            if target != "*" and f"TARGET_{target}" not in cppdefines:
                 continue
             for macro in options.get("target.macros_add", []):
                 macro = self._mbed_normalize_macro(macro)
@@ -701,7 +704,7 @@ class MbedLibBuilder(LibBuilderBase):
             if not macro["name"]:
                 macro["name"] = key
                 if "." not in macro["name"]:
-                    macro["name"] = "%s.%s" % (manifest.get("name"), macro["name"])
+                    macro["name"] = f'{manifest.get("name")}.{macro["name"]}'
                 macro["name"] = re.sub(
                     r"[^a-z\d]+", "_", macro["name"], flags=re.I
                 ).upper()
@@ -714,16 +717,17 @@ class MbedLibBuilder(LibBuilderBase):
     def _mbed_conf_append_macros(self, mbed_config_path, macros):
         lines = []
         with open(mbed_config_path, encoding="utf8") as fp:
-            for line in fp.readlines():
+            for line in fp:
                 line = line.strip()
                 if line == "#endif":
                     lines.append("// PlatformIO Library Dependency Finder (LDF)")
                     lines.extend(
                         [
-                            "#define %s %s" % (name, value if value is not None else "")
+                            f'#define {name} {value if value is not None else ""}'
                             for name, value in macros.items()
                         ]
                     )
+
                     lines.append("")
                 if not line.startswith("#define"):
                     lines.append(line)
@@ -739,9 +743,11 @@ class MbedLibBuilder(LibBuilderBase):
 class PlatformIOLibBuilder(LibBuilderBase):
     def load_manifest(self):
         manifest_path = os.path.join(self.path, "library.json")
-        if not os.path.isfile(manifest_path):
-            return {}
-        return ManifestParserFactory.new_from_file(manifest_path).as_dict()
+        return (
+            ManifestParserFactory.new_from_file(manifest_path).as_dict()
+            if os.path.isfile(manifest_path)
+            else {}
+        )
 
     def _has_arduino_manifest(self):
         return os.path.isfile(os.path.join(self.path, "library.properties"))
@@ -940,7 +946,7 @@ class ProjectAsLibBuilder(LibBuilderBase):
                 lm.install(spec)
                 did_install = True
             except (UnknownPackageError, InternetIsOffline) as e:
-                click.secho("Warning! %s" % e, fg="yellow")
+                click.secho(f"Warning! {e}", fg="yellow")
 
         # reset cache
         if did_install:
@@ -1075,16 +1081,16 @@ def ConfigureProjectLibBuilder(env):
     def _print_deps_tree(root, level=0):
         margin = "|   " * (level)
         for lb in root.depbuilders:
-            title = "<%s>" % lb.name
+            title = f"<{lb.name}>"
             pkg = PackageItem(lb.path)
             if pkg.metadata:
-                title += " %s" % pkg.metadata.version
+                title += f" {pkg.metadata.version}"
             elif lb.version:
-                title += " %s" % lb.version
-            click.echo("%s|-- %s" % (margin, title), nl=False)
+                title += f" {lb.version}"
+            click.echo(f"{margin}|-- {title}", nl=False)
             if int(ARGUMENTS.get("PIOVERBOSE", 0)):
                 if pkg.metadata and pkg.metadata.spec.external:
-                    click.echo(" [%s]" % pkg.metadata.spec.url, nl=False)
+                    click.echo(f" [{pkg.metadata.spec.url}]", nl=False)
                 click.echo(" (", nl=False)
                 click.echo(lb.path, nl=False)
                 click.echo(")", nl=False)
@@ -1097,9 +1103,9 @@ def ConfigureProjectLibBuilder(env):
 
     click.echo("LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf")
     click.echo(
-        "LDF Modes: Finder ~ %s, Compatibility ~ %s"
-        % (ldf_mode, project.lib_compat_mode)
+        f"LDF Modes: Finder ~ {ldf_mode}, Compatibility ~ {project.lib_compat_mode}"
     )
+
 
     project.install_dependencies()
 

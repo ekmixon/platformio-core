@@ -385,9 +385,7 @@ def update_board_envs(
         modified = True
 
         envopts = {"platform": board_config["platform"], "board": id_}
-        # find default framework for board
-        frameworks = board_config.get("frameworks")
-        if frameworks:
+        if frameworks := board_config.get("frameworks"):
             envopts["framework"] = frameworks[0]
 
         for item in project_option:
@@ -396,7 +394,7 @@ def update_board_envs(
             _name, _value = item.split("=", 1)
             envopts[_name.strip()] = _value.strip()
 
-        section = "env:%s%s" % (env_prefix, id_)
+        section = f"env:{env_prefix}{id_}"
         config.add_section(section)
 
         for option, value in envopts.items():
@@ -427,7 +425,7 @@ def update_project_env(project_dir, environment, project_option):
         os.path.join(project_dir, "platformio.ini"), parse_extra=False
     )
 
-    section = "env:%s" % environment
+    section = f"env:{environment}"
     if not config.has_section(section):
         config.add_section(section)
 

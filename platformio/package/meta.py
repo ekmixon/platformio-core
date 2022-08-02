@@ -98,9 +98,7 @@ class PackageOutdatedResult(object):
             return False
         if allow_incompatible:
             return self.current != self.latest
-        if self.wanted:
-            return self.current != self.wanted
-        return True
+        return self.current != self.wanted if self.wanted else True
 
 
 class PackageSpec(object):  # pylint: disable=too-many-instance-attributes
@@ -119,7 +117,7 @@ class PackageSpec(object):  # pylint: disable=too-many-instance-attributes
             except ValueError as exc:
                 if not self.name or self.url or self.raw:
                     raise exc
-                self.raw = "%s=%s" % (self.name, requirements)
+                self.raw = f"{self.name}={requirements}"
         self._name_is_custom = False
         self._parse(self.raw)
 
@@ -137,8 +135,7 @@ class PackageSpec(object):  # pylint: disable=too-many-instance-attributes
     def __hash__(self):
         return crc32(
             hashlib_encode_data(
-                "%s-%s-%s-%s-%s"
-                % (self.owner, self.id, self.name, self.requirements, self.url)
+                f"{self.owner}-{self.id}-{self.name}-{self.requirements}-{self.url}"
             )
         )
 
@@ -173,12 +170,12 @@ class PackageSpec(object):  # pylint: disable=too-many-instance-attributes
             result = self.url
         elif self.name:
             if self.owner:
-                result = self.owner + "/"
+                result = f"{self.owner}/"
             result += self.name
         elif self.id:
             result = "id:%d" % self.id
         if self.requirements:
-            result += " @ " + str(self.requirements)
+            result += f" @ {str(self.requirements)}"
         return result
 
     def has_custom_name(self):
@@ -198,12 +195,12 @@ class PackageSpec(object):  # pylint: disable=too-many-instance-attributes
             return self.raw or self.url
         result = ""
         if self.name:
-            result = "%s/%s" % (self.owner, self.name) if self.owner else self.name
+            result = f"{self.owner}/{self.name}" if self.owner else self.name
         elif self.id:
             result = str(self.id)
         assert result
         if self.requirements:
-            result = "%s@%s" % (result, self.requirements)
+            result = f"{result}@{self.requirements}"
         return result
 
     def _parse(self, raw):
@@ -235,11 +232,9 @@ class PackageSpec(object):  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def _parse_local_file(raw):
-        if raw.startswith("file://") or not any(c in raw for c in ("/", "\\")):
+        if raw.startswith("file://") or all(c not in raw for c in ("/", "\\")):
             return raw
-        if os.path.exists(raw):
-            return "file://%s" % raw
-        return raw
+        return f"file://{raw}" if os.path.exists(raw) else raw
 
     def _parse_requirements(self, raw):
         if "@" not in raw or raw.startswith("file://"):
@@ -264,9 +259,7 @@ class PackageSpec(object):  # pylint: disable=too-many-instance-attributes
         if raw.isdigit():
             self.id = int(raw)
             return None
-        if raw.startswith("id="):
-            return self._parse_id(raw[3:])
-        return raw
+        return self._parse_id(raw[3:]) if raw.startswith("id=") else raw
 
     def _parse_owner(self, raw):
         if raw.count("/") != 1 or "@" in raw:
@@ -277,7 +270,7 @@ class PackageSpec(object):  # pylint: disable=too-many-instance-attributes
         return None
 
     def _parse_url(self, raw):
-        if not any(s in raw for s in ("@", ":", "/")):
+        if all(s not in raw for s in ("@", ":", "/")):
             return raw
         self.url = raw.strip()
         parts = urlparse(self.url)
@@ -301,9 +294,9 @@ class PackageSpec(object):  # pylint: disable=too-many-instance-attributes
             in ("mbed.com", "os.mbed.com", "developer.mbed.org")
         ]
         if any(git_conditions):
-            self.url = "git+" + self.url
+            self.url = f"git+{self.url}"
         elif any(hg_conditions):
-            self.url = "hg+" + self.url
+            self.url = f"hg+{self.url}"
 
         return None
 
@@ -324,9 +317,7 @@ class PackageSpec(object):  # pylint: disable=too-many-instance-attributes
             return parts.path.split("/")[2]
 
         name = os.path.basename(url)
-        if "." in name:
-            return name.split(".", 1)[0].strip()
-        return name
+        return name.split(".", 1)[0].strip() if "." in name else name
 
 
 class PackageMetaData(object):

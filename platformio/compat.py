@@ -43,9 +43,7 @@ def is_bytes(x):
 def ci_strings_are_equal(a, b):
     if a == b:
         return True
-    if not a or not b:
-        return False
-    return a.strip().lower() == b.strip().lower()
+    return False if not a or not b else a.strip().lower() == b.strip().lower()
 
 
 def hashlib_encode_data(data):
@@ -78,13 +76,15 @@ def get_locale_encoding():
 
 def get_object_members(obj, ignore_private=True):
     members = inspect.getmembers(obj, lambda a: not inspect.isroutine(a))
-    if not ignore_private:
-        return members
-    return {
-        item[0]: item[1]
-        for item in members
-        if not (item[0].startswith("__") and item[0].endswith("__"))
-    }
+    return (
+        {
+            item[0]: item[1]
+            for item in members
+            if not item[0].startswith("__") or not item[0].endswith("__")
+        }
+        if ignore_private
+        else members
+    )
 
 
 def ensure_python3(raise_exception=True):

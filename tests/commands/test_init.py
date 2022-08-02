@@ -52,7 +52,7 @@ def test_init_duplicated_boards(clirunner, validate_cliresult, tmpdir):
             validate_pioproject(str(tmpdir))
         config = ProjectConfig(join(getcwd(), "platformio.ini"))
         config.validate()
-        assert set(config.sections()) == set(["env:uno"])
+        assert set(config.sections()) == {"env:uno"}
 
 
 def test_init_ide_without_board(clirunner, tmpdir):

@@ -107,7 +107,7 @@ class EmbeddedTestProcessor(TestProcessorBase):
         if self.env_options.get("test_port"):
             return self.env_options.get("test_port")
 
-        assert set(["platform", "board"]) & set(self.env_options.keys())
+        assert {"platform", "board"} & set(self.env_options.keys())
         p = PlatformFactory.new(self.env_options["platform"])
         board_hwids = p.board_config(self.env_options["board"]).get("build.hwids", [])
         port = None
@@ -116,7 +116,7 @@ class EmbeddedTestProcessor(TestProcessorBase):
             for item in util.get_serialports():
                 port = item["port"]
                 for hwid in board_hwids:
-                    hwid_str = ("%s:%s" % (hwid[0], hwid[1])).replace("0x", "")
+                    hwid_str = f"{hwid[0]}:{hwid[1]}".replace("0x", "")
                     if hwid_str in item["hwid"] and self.is_serial_port_ready(port):
                         return port
 

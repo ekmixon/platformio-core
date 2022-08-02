@@ -67,10 +67,10 @@ def get_default_debug_env(config):
     default_envs = config.default_envs()
     all_envs = config.envs()
     for env in default_envs:
-        if config.get("env:" + env, "build_type") == "debug":
+        if config.get(f"env:{env}", "build_type") == "debug":
             return env
     for env in all_envs:
-        if config.get("env:" + env, "build_type") == "debug":
+        if config.get(f"env:{env}", "build_type") == "debug":
             return env
     return default_envs[0] if default_envs else all_envs[0]
 
@@ -78,14 +78,13 @@ def get_default_debug_env(config):
 def predebug_project(
     ctx, project_dir, project_config, env_name, preload, verbose
 ):  # pylint: disable=too-many-arguments
-    debug_testname = project_config.get("env:" + env_name, "debug_test")
-    if debug_testname:
+    if debug_testname := project_config.get(f"env:{env_name}", "debug_test"):
         test_names = get_test_names(project_config)
         if debug_testname not in test_names:
             raise DebugInvalidOptionsError(
-                "Unknown test name `%s`. Valid names are `%s`"
-                % (debug_testname, ", ".join(test_names))
+                f'Unknown test name `{debug_testname}`. Valid names are `{", ".join(test_names)}`'
             )
+
         print_processing_header(env_name, project_config, verbose)
         tp = TestProcessorBase(
             ctx,
@@ -141,16 +140,16 @@ def has_debug_symbols(prog_path):
 
 
 def is_prog_obsolete(prog_path):
-    prog_hash_path = prog_path + ".sha1"
+    prog_hash_path = f"{prog_path}.sha1"
     if not isfile(prog_path):
         return True
     shasum = sha1()
     with open(prog_path, "rb") as fp:
         while True:
-            data = fp.read(1024)
-            if not data:
+            if data := fp.read(1024):
+                shasum.update(data)
+            else:
                 break
-            shasum.update(data)
     new_digest = shasum.hexdigest()
     old_digest = None
     if isfile(prog_hash_path):
@@ -167,15 +166,11 @@ def reveal_debug_port(env_debug_port, tool_name, tool_settings):
     def _get_pattern():
         if not env_debug_port:
             return None
-        if set(["*", "?", "[", "]"]) & set(env_debug_port):
-            return env_debug_port
-        return None
+        return env_debug_port if {"*", "?", "[", "]"} & set(env_debug_port) else None
 
     def _is_match_pattern(port):
         pattern = _get_pattern()
-        if not pattern:
-            return True
-        return fnmatch(port, pattern)
+        return fnmatch(port, pattern) if pattern else True
 
     def _look_for_serial_port(hwids):
         for item in util.get_serialports(filter_hwid=True):
@@ -188,7 +183,7 @@ def reveal_debug_port(env_debug_port, tool_name, tool_settings):
                 if "GDB" in item["description"]:
                     return port
             for hwid in hwids:
-                hwid_str = ("%s:%s" % (hwid[0], hwid[1])).replace("0x", "")
+                hwid_str = f"{hwid[0]}:{hwid[1]}".replace("0x", "")
                 if hwid_str in item["hwid"]:
                     return port
         return None

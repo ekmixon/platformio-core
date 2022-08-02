@@ -29,5 +29,5 @@ class CheckToolFactory(object):
         elif tool == "pvs-studio":
             cls = PvsStudioCheckTool
         else:
-            raise exception.PlatformioException("Unknown check tool `%s`" % tool)
+            raise exception.PlatformioException(f"Unknown check tool `{tool}`")
         return cls(project_dir, config, envname, options)

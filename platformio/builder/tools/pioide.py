@@ -25,12 +25,14 @@ from platformio.proc import exec_command, where_is_program
 
 
 def _dump_includes(env):
-    includes = {}
+    includes = {
+        "build": [
+            env.subst("$PROJECT_INCLUDE_DIR"),
+            env.subst("$PROJECT_SRC_DIR"),
+        ]
+    }
 
-    includes["build"] = [
-        env.subst("$PROJECT_INCLUDE_DIR"),
-        env.subst("$PROJECT_SRC_DIR"),
-    ]
+
     includes["build"].extend(
         [os.path.realpath(env.subst(item)) for item in env.get("CPPPATH", [])]
     )
@@ -62,15 +64,15 @@ def _dump_includes(env):
 
     # include Unity framework if there are tests in project
     includes["unity"] = []
-    auto_install_unity = False
     test_dir = env.GetProjectConfig().get("platformio", "test_dir")
-    if os.path.isdir(test_dir) and os.listdir(test_dir) != ["README"]:
-        auto_install_unity = True
-    unity_dir = get_core_package_dir(
+    auto_install_unity = bool(
+        os.path.isdir(test_dir) and os.listdir(test_dir) != ["README"]
+    )
+
+    if unity_dir := get_core_package_dir(
         "tool-unity",
         auto_install=auto_install_unity,
-    )
-    if unity_dir:
+    ):
         includes["unity"].append(unity_dir)
 
     return includes
@@ -82,8 +84,9 @@ def _get_gcc_defines(env):
         sysenv = os.environ.copy()
         sysenv["PATH"] = str(env["ENV"]["PATH"])
         result = exec_command(
-            "echo | %s -dM -E -" % env.subst("$CC"), env=sysenv, shell=True
+            f'echo | {env.subst("$CC")} -dM -E -', env=sysenv, shell=True
         )
+
     except OSError:
         return items
     if result["returncode"] != 0:
@@ -93,7 +96,7 @@ def _get_gcc_defines(env):
         if not tokens or tokens[0] != "#define":
             continue
         if len(tokens) > 2:
-            items.append("%s=%s" % (tokens[1], tokens[2]))
+            items.append(f"{tokens[1]}={tokens[2]}")
         else:
             items.append(tokens[1])
     return items
@@ -103,8 +106,7 @@ def _dump_defines(env):
     defines = []
     # global symbols
     for item in SCons.Defaults.processDefines(env.get("CPPDEFINES", [])):
-        item = item.strip()
-        if item:
+        if item := item.strip():
             defines.append(env.subst(item).replace("\\", ""))
 
     # special symbol for Atmel AVR MCU
@@ -192,12 +194,11 @@ def DumpIDEData(env, globalenv):
     env_.Replace(CPPDEFINES=_new_defines)
 
     # export C/C++ build flags
-    data.update(
-        {
-            "cc_flags": _subst_cmd(env_, "$CFLAGS $CCFLAGS $CPPFLAGS"),
-            "cxx_flags": _subst_cmd(env_, "$CXXFLAGS $CCFLAGS $CPPFLAGS"),
-        }
-    )
+    data |= {
+        "cc_flags": _subst_cmd(env_, "$CFLAGS $CCFLAGS $CPPFLAGS"),
+        "cxx_flags": _subst_cmd(env_, "$CXXFLAGS $CCFLAGS $CPPFLAGS"),
+    }
+
 
     return data
 

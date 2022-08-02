@@ -60,8 +60,9 @@ def cli(port, host, no_open, shutdown_timeout, session_id):
     home_url = "http://%s:%d%s" % (
         host,
         port,
-        ("/session/%s/" % session_id) if session_id else "/",
+        f"/session/{session_id}/" if session_id else "/",
     )
+
     click.echo(
         "\n".join(
             [
@@ -69,13 +70,14 @@ def cli(port, host, no_open, shutdown_timeout, session_id):
                 "  ___I_",
                 " /\\-_--\\   PlatformIO Home",
                 "/  \\_-__\\",
-                "|[]| [] |  %s" % home_url,
-                "|__|____|__%s" % ("_" * len(home_url)),
+                f"|[]| [] |  {home_url}",
+                f'|__|____|__{"_" * len(home_url)}',
             ]
         )
     )
+
     click.echo("")
-    click.echo("Open PlatformIO Home in your browser by this URL => %s" % home_url)
+    click.echo(f"Open PlatformIO Home in your browser by this URL => {home_url}")
 
     if is_port_used(host, port):
         click.secho(

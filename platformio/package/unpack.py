@@ -93,7 +93,7 @@ class TARArchiver(BaseArchiver):
             super(TARArchiver, self).extract_item(item, dest_dir)
         else:
             click.secho(
-                "Blocked insecure item `%s` from TAR archive" % item.name,
+                f"Blocked insecure item `{item.name}` from TAR archive",
                 fg="red",
                 err=True,
             )
@@ -107,15 +107,14 @@ class ZIPArchiver(BaseArchiver):
 
     @staticmethod
     def preserve_permissions(item, dest_dir):
-        attrs = item.external_attr >> 16
-        if attrs:
+        if attrs := item.external_attr >> 16:
             os.chmod(os.path.join(dest_dir, item.filename), attrs)
 
     @staticmethod
     def preserve_mtime(item, dest_dir):
         fs.change_filemtime(
             os.path.join(dest_dir, item.filename),
-            mktime(tuple(item.date_time) + tuple([0, 0, 0])),
+            mktime(tuple(item.date_time) + (0, 0, 0)),
         )
 
     @staticmethod

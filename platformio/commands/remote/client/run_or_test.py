@@ -61,7 +61,7 @@ class RunOrTestClient(AsyncClientBase):
     def generate_project_id(self, path):
         h = hashlib.sha1(hashlib_encode_data(self.id))
         h.update(hashlib_encode_data(path))
-        return "%s-%s" % (os.path.basename(path), h.hexdigest())
+        return f"{os.path.basename(path)}-{h.hexdigest()}"
 
     def add_project_items(self, psync):
         with fs.cd(self.options["project_dir"]):
@@ -90,7 +90,7 @@ class RunOrTestClient(AsyncClientBase):
         psync.add_item(
             cfg.get("platformio", "src_dir"), "src", cb_filter=self._cb_tarfile_filter
         )
-        if set(["buildfs", "uploadfs", "uploadfsota"]) & set(
+        if {"buildfs", "uploadfs", "uploadfsota"} & set(
             self.options.get("target", [])
         ):
             psync.add_item(cfg.get("platformio", "data_dir"), "data")
@@ -124,9 +124,7 @@ class RunOrTestClient(AsyncClientBase):
 
     @staticmethod
     def is_file_with_exts(path, exts):
-        if path.endswith(tuple(".%s" % e for e in exts)):
-            return True
-        return False
+        return bool(path.endswith(tuple(f".{e}" for e in exts)))
 
     def agent_pool_ready(self):
         self.psync_init()

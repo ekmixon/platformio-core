@@ -103,7 +103,7 @@ class ContentCache(object):
         found = False
         newlines = []
         with open(self._db_path, encoding="utf8") as fp:
-            for line in fp.readlines():
+            for line in fp:
                 line = line.strip()
                 if "=" not in line:
                     continue

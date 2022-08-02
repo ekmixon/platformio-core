@@ -103,9 +103,7 @@ class PackagePacker(object):
             r"[^\da-zA-Z\-\._\+]+",
             "",
             "{name}{system}-{version}.tar.gz".format(
-                name=name,
-                system=("-" + system) if system else "",
-                version=version,
+                name=name, system=f"-{system}" if system else "", version=version
             ),
         )
 
@@ -160,9 +158,9 @@ class PackagePacker(object):
             if len(include) == 1:
                 if not os.path.isdir(os.path.join(src, include[0])):
                     raise PackageException(
-                        "Non existing `include` directory `%s` in a package"
-                        % include[0]
+                        f"Non existing `include` directory `{include[0]}` in a package"
                     )
+
                 return os.path.join(src, include[0])
 
         for root, _, __ in os.walk(src):
@@ -208,13 +206,13 @@ class PackagePacker(object):
         ):
             exclude_extra.extend(self.EXCLUDE_LIBRARY_EXTRA)
 
-        result = ["+<%s>" % p for p in include or ["*", ".*"]]
-        result += ["-<%s>" % p for p in self.EXCLUDE_DEFAULT]
+        result = [f"+<{p}>" for p in include or ["*", ".*"]]
+        result += [f"-<{p}>" for p in self.EXCLUDE_DEFAULT]
         # exclude items declared in manifest
-        result += ["-<%s>" % p for p in exclude or []]
+        result += [f"-<{p}>" for p in exclude or []]
         # apply extra excludes if no custom "export" field in manifest
         if not include and not exclude:
-            result += ["-<%s>" % p for p in exclude_extra]
+            result += [f"-<{p}>" for p in exclude_extra]
         # automatically include manifests
-        result += ["+<%s>" % p for p in self.INCLUDE_DEFAULT]
+        result += [f"+<{p}>" for p in self.INCLUDE_DEFAULT]
         return result

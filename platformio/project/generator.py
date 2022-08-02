@@ -33,8 +33,7 @@ class ProjectGenerator(object):
 
     def get_best_envname(self, board_ids=None):
         envname = None
-        default_envs = self.config.default_envs()
-        if default_envs:
+        if default_envs := self.config.default_envs():
             envname = default_envs[0]
             if not board_ids:
                 return envname
@@ -91,7 +90,7 @@ class ProjectGenerator(object):
         }
 
         # default env configuration
-        tpl_vars.update(self.config.items(env=self.env_name, as_dict=True))
+        tpl_vars |= self.config.items(env=self.env_name, as_dict=True)
         # build data
         tpl_vars.update(load_project_ide_data(self.project_dir, self.env_name) or {})
 
@@ -124,8 +123,7 @@ class ProjectGenerator(object):
         result = []
         with fs.cd(self.project_dir):
             for root, _, files in os.walk(self.config.get("platformio", "src_dir")):
-                for f in files:
-                    result.append(os.path.relpath(os.path.join(root, f)))
+                result.extend(os.path.relpath(os.path.join(root, f)) for f in files)
         return result
 
     def get_tpls(self):

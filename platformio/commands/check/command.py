@@ -97,13 +97,11 @@ def cli(
             )
 
             env_options = config.items(env=envname, as_dict=True)
-            env_dump = []
-            for k, v in env_options.items():
-                if k not in ("platform", "framework", "board"):
-                    continue
-                env_dump.append(
-                    "%s: %s" % (k, ", ".join(v) if isinstance(v, list) else v)
-                )
+            env_dump = [
+                f'{k}: {", ".join(v) if isinstance(v, list) else v}'
+                for k, v in env_options.items()
+                if k in ("platform", "framework", "board")
+            ]
 
             default_patterns = [
                 config.get("platformio", "src_dir"),
@@ -112,15 +110,19 @@ def cli(
             tool_options = dict(
                 verbose=verbose,
                 silent=silent,
-                patterns=pattern or env_options.get("check_patterns", default_patterns),
+                patterns=pattern
+                or env_options.get("check_patterns", default_patterns),
                 flags=flags or env_options.get("check_flags"),
                 severity=[DefectItem.SEVERITY_LABELS[DefectItem.SEVERITY_HIGH]]
                 if silent
-                else severity or config.get("env:" + envname, "check_severity"),
-                skip_packages=skip_packages or env_options.get("check_skip_packages"),
+                else severity
+                or config.get(f"env:{envname}", "check_severity"),
+                skip_packages=skip_packages
+                or env_options.get("check_skip_packages"),
             )
 
-            for tool in config.get("env:" + envname, "check_tool"):
+
+            for tool in config.get(f"env:{envname}", "check_tool"):
                 if skipenv:
                     results.append({"env": envname, "tool": tool})
                     continue
@@ -143,10 +145,12 @@ def cli(
 
                 result["succeeded"] = rc == 0
                 if fail_on_defect:
-                    result["succeeded"] = rc == 0 and not any(
-                        DefectItem.SEVERITY_LABELS[d.severity] in fail_on_defect
+                    result["succeeded"] = rc == 0 and all(
+                        DefectItem.SEVERITY_LABELS[d.severity]
+                        not in fail_on_defect
                         for d in result["defects"]
                     )
+
                 result["stats"] = collect_component_stats(result)
                 results.append(result)
 
@@ -257,11 +261,8 @@ def print_defects_stats(results):
 
     total = ["Total"] + [sum(d) for d in list(zip(*tabular_data))[1:]]
     tabular_data.sort()
-    tabular_data.append([])  # Empty line as delimiter
-    tabular_data.append(total)
-
-    headers = ["Component"]
-    headers.extend([l.upper() for l in severity_labels])
+    tabular_data.extend(([], total))
+    headers = ["Component", *[l.upper() for l in severity_labels]]
     headers = [click.style(h, bold=True) for h in headers]
     click.echo(tabulate(tabular_data, headers=headers, numalign="center"))
     click.echo()

@@ -72,7 +72,7 @@ class CheckToolBase(object):  # pylint: disable=too-many-instance-attributes
         for flag in flags:
             if ":" not in flag or flag.startswith("-"):
                 result.extend([f for f in flag.split(" ") if f])
-            elif flag.startswith("%s:" % tool):
+            elif flag.startswith(f"{tool}:"):
                 result.extend([f for f in flag.split(":", 1)[1].split(" ") if f])
 
         return result
@@ -95,7 +95,7 @@ class CheckToolBase(object):  # pylint: disable=too-many-instance-attributes
                 if not tokens or tokens[0] != "#define":
                     continue
                 if len(tokens) > 2:
-                    defines.append("%s=%s" % (tokens[1], tokens[2]))
+                    defines.append(f"{tokens[1]}={tokens[2]}")
                 else:
                     defines.append(tokens[1])
 
@@ -111,10 +111,7 @@ class CheckToolBase(object):  # pylint: disable=too-many-instance-attributes
             return fp.name
 
     def _long_includes_hook(self, includes):
-        data = []
-        for inc in includes:
-            data.append('-I"%s"' % fs.to_unix_path(inc))
-
+        data = ['-I"%s"' % fs.to_unix_path(inc) for inc in includes]
         return '@"%s"' % self._create_tmp_file(" ".join(data))
 
     @staticmethod
@@ -219,8 +216,7 @@ class CheckToolBase(object):  # pylint: disable=too-many-instance-attributes
 
     def check(self, on_defect_callback=None):
         self._on_defect_callback = on_defect_callback
-        cmd = self.configure_command()
-        if cmd:
+        if cmd := self.configure_command():
             if self.options.get("verbose"):
                 click.echo(" ".join(cmd))
 

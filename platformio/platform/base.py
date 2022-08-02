@@ -129,10 +129,7 @@ class PlatformBase(  # pylint: disable=too-many-instance-attributes,too-many-pub
         raise NotImplementedError()
 
     def is_embedded(self):
-        for opts in self.packages.values():
-            if opts.get("type") == "uploader":
-                return True
-        return False
+        return any(opts.get("type") == "uploader" for opts in self.packages.values())
 
     def get_boards(self, id_=None):
         def _append_board(board_id, manifest_path):
@@ -164,7 +161,7 @@ class PlatformBase(  # pylint: disable=too-many-instance-attributes,too-many-pub
                 for boards_dir in bdirs:
                     if not os.path.isdir(boards_dir):
                         continue
-                    manifest_path = os.path.join(boards_dir, "%s.json" % id_)
+                    manifest_path = os.path.join(boards_dir, f"{id_}.json")
                     if os.path.isfile(manifest_path):
                         _append_board(id_, manifest_path)
                         break
@@ -189,8 +186,7 @@ class PlatformBase(  # pylint: disable=too-many-instance-attributes,too-many-pub
             framework = framework.lower().strip()
             if not framework or framework not in self.frameworks:
                 continue
-            _pkg_name = self.frameworks[framework].get("package")
-            if _pkg_name:
+            if _pkg_name := self.frameworks[framework].get("package"):
                 self.packages[_pkg_name]["optional"] = False
 
         # enable upload tools for upload targets
@@ -223,7 +219,7 @@ class PlatformBase(  # pylint: disable=too-many-instance-attributes,too-many-pub
                 libcore_dir = os.path.join(libcores_dir, item)
                 if not os.path.isdir(libcore_dir):
                     continue
-                storages[libcore_dir] = "%s-core-%s" % (opts["package"], item)
+                storages[libcore_dir] = f'{opts["package"]}-core-{item}'
 
         return [dict(name=name, path=path) for path, name in storages.items()]
 
@@ -237,21 +233,19 @@ class PlatformBase(  # pylint: disable=too-many-instance-attributes,too-many-pub
         if not self.python_packages:
             return None
         click.echo(
-            "Installing Python packages: %s"
-            % ", ".join(list(self.python_packages.keys())),
+            f'Installing Python packages: {", ".join(list(self.python_packages.keys()))}'
         )
+
         args = [proc.get_pythonexe_path(), "-m", "pip", "install", "--upgrade"]
         for name, requirements in self.python_packages.items():
             if any(c in requirements for c in ("<", ">", "=")):
-                args.append("%s%s" % (name, requirements))
+                args.append(f"{name}{requirements}")
             else:
-                args.append("%s==%s" % (name, requirements))
+                args.append(f"{name}=={requirements}")
         try:
             return subprocess.call(args) == 0
         except Exception as e:  # pylint: disable=broad-except
-            click.secho(
-                "Could not install Python packages -> %s" % e, fg="red", err=True
-            )
+            click.secho(f"Could not install Python packages -> {e}", fg="red", err=True)
         return None
 
     def uninstall_python_packages(self):
@@ -263,6 +257,4 @@ class PlatformBase(  # pylint: disable=too-many-instance-attributes,too-many-pub
         try:
             subprocess.call(args) == 0
         except Exception as e:  # pylint: disable=broad-except
-            click.secho(
-                "Could not install Python packages -> %s" % e, fg="red", err=True
-            )
+            click.secho(f"Could not install Python packages -> {e}", fg="red", err=True)

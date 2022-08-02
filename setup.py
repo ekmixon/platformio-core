@@ -30,13 +30,14 @@ minimal_requirements = [
     "bottle==0.12.*",
     "click>=7.1.2,<9,!=8.0.2",
     "colorama",
-    "marshmallow%s" % (">=2,<3" if PY2 else ">=2,<4"),
+    f'marshmallow{">=2,<3" if PY2 else ">=2,<4"}',
     "pyelftools>=0.27,<1",
     "pyserial==3.*",
     "requests==2.*",
     "semantic_version==2.8.*",
     "tabulate==0.8.*",
 ]
+
 
 if not PY2:
     minimal_requirements.append("zeroconf==0.36.*")

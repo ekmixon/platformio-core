@@ -147,8 +147,7 @@ class DebugConfigBase:  # pylint: disable=too-many-instance-attributes
         )
 
     def _load_build_data(self):
-        data = load_project_ide_data(os.getcwd(), self.env_name, cache=True)
-        if data:
+        if data := load_project_ide_data(os.getcwd(), self.env_name, cache=True):
             return data
         raise DebugInvalidOptionsError("Could not load a build configuration")
 
@@ -201,7 +200,7 @@ class DebugConfigBase:  # pylint: disable=too-many-instance-attributes
 
     def get_init_script(self, debugger):
         try:
-            return getattr(self, "%s_INIT_SCRIPT" % debugger.upper())
+            return getattr(self, f"{debugger.upper()}_INIT_SCRIPT")
         except AttributeError:
             raise NotImplementedError
 
@@ -225,7 +224,7 @@ class DebugConfigBase:  # pylint: disable=too-many-instance-attributes
 
         def _replace(text):
             for key, value in patterns.items():
-                pattern = "$%s" % key
+                pattern = f"${key}"
                 text = text.replace(pattern, value or "")
             return text
 
@@ -240,7 +239,7 @@ class DebugConfigBase:  # pylint: disable=too-many-instance-attributes
                     source[key] = self.reveal_patterns(value, patterns)
 
         data = json.dumps(source)
-        if any(("$" + key) in data for key in patterns):
+        if any(f"${key}" in data for key in patterns):
             source = self.reveal_patterns(source, patterns)
 
         return source

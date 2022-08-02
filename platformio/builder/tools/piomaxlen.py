@@ -34,15 +34,12 @@ WINPATHSEP_RE = re.compile(r"\\([^\"'\\]|$)")
 
 def tempfile_arg_esc_func(arg):
     arg = quote_spaces(arg)
-    if not IS_WINDOWS:
-        return arg
-    # GCC requires double Windows slashes, let's use UNIX separator
-    return WINPATHSEP_RE.sub(r"/\1", arg)
+    return WINPATHSEP_RE.sub(r"/\1", arg) if IS_WINDOWS else arg
 
 
 def long_sources_hook(env, sources):
     _sources = str(sources).replace("\\", "/")
-    if len(str(_sources)) < MAX_LINE_LENGTH:
+    if len(_sources) < MAX_LINE_LENGTH:
         return sources
 
     # fix space in paths
@@ -61,8 +58,10 @@ def _file_long_data(env, data):
     if not os.path.isdir(build_dir):
         os.makedirs(build_dir)
     tmp_file = os.path.join(
-        build_dir, "longcmd-%s" % hashlib.md5(hashlib_encode_data(data)).hexdigest()
+        build_dir,
+        f"longcmd-{hashlib.md5(hashlib_encode_data(data)).hexdigest()}",
     )
+
     if os.path.isfile(tmp_file):
         return tmp_file
     with open(tmp_file, mode="w", encoding="utf8") as fp:

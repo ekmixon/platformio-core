@@ -53,17 +53,19 @@ lib_deps =
     config = ProjectConfig(os.path.join(str(project_dir), "platformio.ini"))
     assert sorted(config.get("env:one", "lib_deps")) == sorted(
         [
-            "bblanchon/ArduinoJson@^%s" % aj_pkg_data["version"]["name"],
+            f'bblanchon/ArduinoJson@^{aj_pkg_data["version"]["name"]}',
             "knolleary/PubSubClient@~2.7",
         ]
     )
+
     assert sorted(config.get("env:two", "lib_deps")) == sorted(
         [
             "CustomLib",
-            "bblanchon/ArduinoJson@^%s" % aj_pkg_data["version"]["name"],
+            f'bblanchon/ArduinoJson@^{aj_pkg_data["version"]["name"]}',
             "knolleary/PubSubClient@~2.7",
         ]
     )
+
 
     # ensure "build" version without NPM spec
     result = clirunner.invoke(
@@ -77,11 +79,12 @@ lib_deps =
     config = ProjectConfig(os.path.join(str(project_dir), "platformio.ini"))
     assert sorted(config.get("env:one", "lib_deps")) == sorted(
         [
-            "bblanchon/ArduinoJson@^%s" % aj_pkg_data["version"]["name"],
+            f'bblanchon/ArduinoJson@^{aj_pkg_data["version"]["name"]}',
             "knolleary/PubSubClient@~2.7",
-            "mbed-sam-grove/LinkedList@%s" % ll_pkg_data["version"]["name"],
+            f'mbed-sam-grove/LinkedList@{ll_pkg_data["version"]["name"]}',
         ]
     )
+
 
     # check external package via Git repo
     result = clirunner.invoke(
@@ -125,9 +128,10 @@ lib_deps =
     assert len(config.get("env:one", "lib_deps")) == 2
     assert len(config.get("env:two", "lib_deps")) == 2
     assert config.get("env:one", "lib_deps") == [
-        "mbed-sam-grove/LinkedList@%s" % ll_pkg_data["version"]["name"],
+        f'mbed-sam-grove/LinkedList@{ll_pkg_data["version"]["name"]}',
         "https://github.com/OttoWinter/async-mqtt-client.git#v0.8.3 @ 0.8.3",
     ]
+
     assert config.get("env:two", "lib_deps") == [
         "CustomLib",
         "knolleary/PubSubClient@~2.7",
@@ -145,9 +149,11 @@ lib_deps =
         cmd_lib, ["-d", str(project_dir), "list", "--json-output"]
     )
     validate_cliresult(result)
-    data = {}
-    for key, value in json.loads(result.stdout).items():
-        data[os.path.basename(key)] = value
+    data = {
+        os.path.basename(key): value
+        for key, value in json.loads(result.stdout).items()
+    }
+
     ame_lib = next(
         item for item in data["one"] if item["name"] == "AsyncMqttClient-esphome"
     )
@@ -159,7 +165,7 @@ lib_deps =
         ame_lib["__src_url"]
         == "git+https://github.com/OttoWinter/async-mqtt-client.git#v0.8.3"
     )
-    assert ame_lib["version"] == ("0.8.3+sha.%s" % ame_vcs.get_current_revision())
+    assert ame_lib["version"] == f"0.8.3+sha.{ame_vcs.get_current_revision()}"
 
 
 def test_update(clirunner, validate_cliresult, isolated_pio_core, tmpdir_factory):

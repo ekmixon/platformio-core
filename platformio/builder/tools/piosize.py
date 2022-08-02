@@ -40,7 +40,7 @@ def _run_tool(cmd, env, tool_args):
     with open(tmp_file, mode="w", encoding="utf8") as fp:
         fp.write("\n".join(tool_args))
 
-    cmd.append("@" + tmp_file)
+    cmd.append(f"@{tmp_file}")
     result = exec_command(cmd, env=sysenv)
     remove(tmp_file)
 
@@ -191,8 +191,7 @@ def _calculate_firmware_size(sections):
 def DumpSizeData(_, target, source, env):  # pylint: disable=unused-argument
     data = {"device": {}, "memory": {}, "version": 1}
 
-    board = env.BoardConfig()
-    if board:
+    if board := env.BoardConfig():
         data["device"] = {
             "mcu": board.get("build.mcu", ""),
             "cpu": board.get("build.cpu", ""),
@@ -201,7 +200,7 @@ def DumpSizeData(_, target, source, env):  # pylint: disable=unused-argument
             "ram": int(board.get("upload.maximum_ram_size", 0)),
         }
         if data["device"]["frequency"] and data["device"]["frequency"].endswith("L"):
-            data["device"]["frequency"] = int(data["device"]["frequency"][0:-1])
+            data["device"]["frequency"] = int(data["device"]["frequency"][:-1])
 
     elf_path = env.subst("$PIOMAINPROG")
 
@@ -238,7 +237,7 @@ def DumpSizeData(_, target, source, env):  # pylint: disable=unused-argument
         data["memory"]["files"] = []
         for k, v in files.items():
             file_data = {"path": k}
-            file_data.update(v)
+            file_data |= v
             data["memory"]["files"].append(file_data)
 
     with open(

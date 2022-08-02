@@ -23,23 +23,25 @@ class DebugConfigFactory(object):
     @staticmethod
     def get_clsname(name):
         name = re.sub(r"[^\da-z\_\-]+", "", name, flags=re.I)
-        return "%s%sDebugConfig" % (name.upper()[0], name.lower()[1:])
+        return f"{name.upper()[0]}{name.lower()[1:]}DebugConfig"
 
     @classmethod
     def new(cls, platform, project_config, env_name):
         board_config = platform.board_config(
-            project_config.get("env:" + env_name, "board")
+            project_config.get(f"env:{env_name}", "board")
         )
+
         tool_name = (
             board_config.get_debug_tool_name(
-                project_config.get("env:" + env_name, "debug_tool")
+                project_config.get(f"env:{env_name}", "debug_tool")
             )
             if board_config
             else None
         )
+
         config_cls = None
         try:
-            mod = importlib.import_module("platformio.debug.config.%s" % tool_name)
+            mod = importlib.import_module(f"platformio.debug.config.{tool_name}")
             config_cls = getattr(mod, cls.get_clsname(tool_name))
         except ModuleNotFoundError:
             config_cls = (

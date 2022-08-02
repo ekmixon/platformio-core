@@ -31,8 +31,7 @@ def get_installed_core_packages():
     pm = ToolPackageManager()
     for name, requirements in __core_packages__.items():
         spec = PackageSpec(owner="platformio", name=name, requirements=requirements)
-        pkg = pm.get_package(spec)
-        if pkg:
+        if pkg := pm.get_package(spec):
             result.append(pkg)
     return result
 
@@ -44,8 +43,7 @@ def get_core_package_dir(name, auto_install=True):
     spec = PackageSpec(
         owner="platformio", name=name, requirements=__core_packages__[name]
     )
-    pkg = pm.get_package(spec)
-    if pkg:
+    if pkg := pm.get_package(spec):
         return pkg.path
     if not auto_install:
         return None
@@ -75,11 +73,9 @@ def remove_unnecessary_core_packages(dry_run=False):
 
     for name, requirements in __core_packages__.items():
         spec = PackageSpec(owner="platformio", name=name, requirements=requirements)
-        pkg = pm.get_package(spec)
-        if not pkg:
-            continue
-        # pylint: disable=no-member
-        best_pkg_versions[pkg.metadata.name] = pkg.metadata.version
+        if pkg := pm.get_package(spec):
+            # pylint: disable=no-member
+            best_pkg_versions[pkg.metadata.name] = pkg.metadata.version
 
     for pkg in pm.get_installed():
         skip_conds = [
@@ -157,8 +153,8 @@ def build_contrib_pysite_package(target_dir, with_metadata=True):
 
     # build manifests
     with open(
-        os.path.join(target_dir, "package.json"), mode="w", encoding="utf8"
-    ) as fp:
+            os.path.join(target_dir, "package.json"), mode="w", encoding="utf8"
+        ) as fp:
         json.dump(
             dict(
                 name="contrib-pysite",
@@ -169,7 +165,7 @@ def build_contrib_pysite_package(target_dir, with_metadata=True):
                     date.today().strftime("%y%m%d"),
                 ),
                 system=list(
-                    set([systype, "linux_armv6l", "linux_armv7l", "linux_armv8l"])
+                    {systype, "linux_armv6l", "linux_armv7l", "linux_armv8l"}
                 )
                 if systype.startswith("linux_arm")
                 else systype,
@@ -183,6 +179,7 @@ def build_contrib_pysite_package(target_dir, with_metadata=True):
             ),
             fp,
         )
+
 
     # generate package metadata
     if with_metadata:
@@ -211,19 +208,13 @@ def get_contrib_pysite_deps():
 
     twisted_version = "20.3.0"
     result = [
-        "twisted == %s" % twisted_version,
+        f"twisted == {twisted_version}",
+        "cryptography >= 3.3, < 35.0.0",
+        "pyopenssl >= 16.0.0",
+        "service_identity >= 18.1.0",
+        "idna >= 0.6, != 2.3",
     ]
 
-    # twisted[tls], see setup.py for %twisted_version%
-    result.extend(
-        [
-            # pyopenssl depends on it, use RUST-less version
-            "cryptography >= 3.3, < 35.0.0",
-            "pyopenssl >= 16.0.0",
-            "service_identity >= 18.1.0",
-            "idna >= 0.6, != 2.3",
-        ]
-    )
 
     if "windows" in sys_type:
         result.append("pypiwin32 == 223")

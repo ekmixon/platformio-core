@@ -36,7 +36,7 @@ class JSONRPCServerFactoryBase:
         raise NotImplementedError
 
     def add_object_handler(self, handler, namespace):
-        self.manager.dispatcher.add_object(handler, prefix="%s." % namespace)
+        self.manager.dispatcher.add_object(handler, prefix=f"{namespace}.")
 
     def on_client_connect(self):
         self.connection_nums += 1
@@ -93,5 +93,5 @@ class WebSocketJSONRPCServer(WebSocketEndpoint):
         # pylint: disable=no-member
         response = await self.factory.manager.get_response_for_payload(data)
         if response.error:
-            click.secho("Error: %s" % response.error.data, fg="red", err=True)
+            click.secho(f"Error: {response.error.data}", fg="red", err=True)
         await websocket.send_text(self.factory.manager.serialize(response.body))

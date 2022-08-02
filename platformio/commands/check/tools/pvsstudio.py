@@ -29,10 +29,10 @@ from platformio.package.manager.core import get_core_package_dir
 class PvsStudioCheckTool(CheckToolBase):  # pylint: disable=too-many-instance-attributes
     def __init__(self, *args, **kwargs):
         self._tmp_dir = tempfile.mkdtemp(prefix="piocheck")
-        self._tmp_preprocessed_file = self._generate_tmp_file_path() + ".i"
-        self._tmp_output_file = self._generate_tmp_file_path() + ".pvs"
-        self._tmp_cfg_file = self._generate_tmp_file_path() + ".cfg"
-        self._tmp_cmd_file = self._generate_tmp_file_path() + ".cmd"
+        self._tmp_preprocessed_file = f"{self._generate_tmp_file_path()}.i"
+        self._tmp_output_file = f"{self._generate_tmp_file_path()}.pvs"
+        self._tmp_cfg_file = f"{self._generate_tmp_file_path()}.cfg"
+        self._tmp_cmd_file = f"{self._generate_tmp_file_path()}.cmd"
         self.tool_path = os.path.join(
             get_core_package_dir("tool-pvs-studio"),
             "x64" if IS_WINDOWS else "bin",
@@ -123,7 +123,7 @@ class PvsStudioCheckTool(CheckToolBase):  # pylint: disable=too-many-instance-at
                 cwe_id = cwe.text.lower().replace("cwe-", "")
             misra = table.find("MISRA")
             if misra is not None:
-                message += " [%s]" % misra.text
+                message += f" [{misra.text}]"
 
             severity = DefectItem.SEVERITY_LOW
             if category == "error":
@@ -192,10 +192,10 @@ class PvsStudioCheckTool(CheckToolBase):  # pylint: disable=too-many-instance-at
             "-E",
             "-o",
             '"%s"' % self._tmp_preprocessed_file,
+            *[f for f in flags if f],
+            *[f"-D{d}" for d in self.cpp_defines],
+            '@"%s"' % self._tmp_cmd_file,
         ]
-        cmd.extend([f for f in flags if f])
-        cmd.extend(["-D%s" % d for d in self.cpp_defines])
-        cmd.append('@"%s"' % self._tmp_cmd_file)
 
         # Explicitly specify C++ as the language used in .ino files
         if src_file.endswith(".ino"):

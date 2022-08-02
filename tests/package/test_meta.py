@@ -97,7 +97,7 @@ def test_spec_local_urls(tmpdir_factory):
     # detached folder without scheme
     pkg_dir = tmpdir_factory.mktemp("storage").join("detached@1.2.3").mkdir()
     assert PackageSpec(str(pkg_dir)) == PackageSpec(
-        name="detached", url="file://%s" % pkg_dir
+        name="detached", url=f"file://{pkg_dir}"
     )
 
 

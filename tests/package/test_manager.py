@@ -141,7 +141,7 @@ def test_build_metadata(isolated_pio_core, tmpdir_factory):
     metadata = pm.build_metadata(
         str(pkg_dir), PackageSpec("owner/platform-name"), vcs_revision
     )
-    assert str(metadata.version) == ("1.2.3-alpha.1+sha." + vcs_revision)
+    assert str(metadata.version) == f"1.2.3-alpha.1+sha.{vcs_revision}"
     assert metadata.version.build[1] == vcs_revision
 
 
@@ -154,7 +154,7 @@ def test_install_from_url(isolated_pio_core, tmpdir_factory):
     # install from local directory
     src_dir = tmp_dir.join("local-lib-dir").mkdir()
     src_dir.join("main.cpp").write("")
-    spec = PackageSpec("file://%s" % src_dir)
+    spec = PackageSpec(f"file://{src_dir}")
     pkg = lm.install(spec, silent=True)
     assert os.path.isfile(os.path.join(pkg.path, "main.cpp"))
     manifest = lm.load_manifest(pkg)
@@ -170,7 +170,7 @@ def test_install_from_url(isolated_pio_core, tmpdir_factory):
         '{"name": "manifest-lib-name", "version": "2.0.0"}'
     )
     tarball_path = PackagePacker(str(src_dir)).pack(str(tmp_dir))
-    spec = PackageSpec("file://%s" % tarball_path)
+    spec = PackageSpec(f"file://{tarball_path}")
     pkg = lm.install(spec, silent=True)
     assert os.path.isfile(os.path.join(pkg.path, "src", "main.cpp"))
     assert pkg == lm.get_package(spec)
@@ -185,7 +185,7 @@ version = 5.2.7
 """
     )
     spec = PackageSpec("company/wifilib @ ^5")
-    pkg = lm.install_from_url("file://%s" % src_dir, spec)
+    pkg = lm.install_from_url(f"file://{src_dir}", spec)
     assert str(pkg.metadata.version) == "5.2.7"
 
     # check package folder names
@@ -259,12 +259,12 @@ def test_install_lib_depndencies(isolated_pio_core, tmpdir_factory):
     )
 
     lm = LibraryPackageManager(str(tmpdir_factory.mktemp("lib-storage")))
-    lm.install("file://%s" % str(src_dir), silent=True)
+    lm.install(f"file://{str(src_dir)}", silent=True)
     installed = lm.get_installed()
     assert len(installed) == 4
-    assert set(["external-repo", "ArduinoJson", "lib-with-deps", "OneWire"]) == set(
+    assert {"external-repo", "ArduinoJson", "lib-with-deps", "OneWire"} == {
         p.metadata.name for p in installed
-    )
+    }
 
 
 def test_install_force(isolated_pio_core, tmpdir_factory):
@@ -353,9 +353,10 @@ def test_get_installed(isolated_pio_core, tmpdir_factory):
 
     installed = pm.get_installed()
     assert len(installed) == 4
-    assert set(["pkg-via-vcs", "foo", "check-system"]) == set(
+    assert {"pkg-via-vcs", "foo", "check-system"} == {
         p.metadata.name for p in installed
-    )
+    }
+
     assert str(pm.get_package("foo").metadata.version) == "3.6.0"
     assert str(pm.get_package("check-system").metadata.version) == "3.0.0"
 
@@ -368,15 +369,15 @@ def test_uninstall(isolated_pio_core, tmpdir_factory):
     # foo @ 1.0.0
     pkg_dir = tmp_dir.join("foo").mkdir()
     pkg_dir.join("library.json").write('{"name": "foo", "version": "1.0.0"}')
-    foo_1_0_0_pkg = lm.install_from_url("file://%s" % pkg_dir, "foo")
+    foo_1_0_0_pkg = lm.install_from_url(f"file://{pkg_dir}", "foo")
     # foo @ 1.3.0
     pkg_dir = tmp_dir.join("foo-1.3.0").mkdir()
     pkg_dir.join("library.json").write('{"name": "foo", "version": "1.3.0"}')
-    lm.install_from_url("file://%s" % pkg_dir, "foo")
+    lm.install_from_url(f"file://{pkg_dir}", "foo")
     # bar
     pkg_dir = tmp_dir.join("bar").mkdir()
     pkg_dir.join("library.json").write('{"name": "bar", "version": "1.0.0"}')
-    bar_pkg = lm.install("file://%s" % pkg_dir, silent=True)
+    bar_pkg = lm.install(f"file://{pkg_dir}", silent=True)
 
     assert len(lm.get_installed()) == 3
     assert os.path.isdir(os.path.join(str(storage_dir), "foo"))

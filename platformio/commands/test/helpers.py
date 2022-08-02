@@ -21,10 +21,8 @@ def get_test_names(config):
     test_dir = config.get("platformio", "test_dir")
     if not os.path.isdir(test_dir):
         raise exception.TestDirNotExists(test_dir)
-    names = []
-    for item in sorted(os.listdir(test_dir)):
-        if os.path.isdir(os.path.join(test_dir, item)):
-            names.append(item)
-    if not names:
-        names = ["*"]
-    return names
+    return [
+        item
+        for item in sorted(os.listdir(test_dir))
+        if os.path.isdir(os.path.join(test_dir, item))
+    ] or ["*"]

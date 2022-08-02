@@ -78,14 +78,14 @@ class CppcheckCheckTool(CheckToolBase):
         else:
             args["severity"] = DefectItem.SEVERITY_LOW
 
-        # Skip defects found in third-party software, but keep in mind that such defects
-        # might break checking process so defects from project files are not reported
-        breaking_defect_ids = ("preprocessorErrorDirective", "syntaxError")
         if (
             args.get("file", "")
             .lower()
             .startswith(self.config.get("platformio", "packages_dir").lower())
         ):
+            # Skip defects found in third-party software, but keep in mind that such defects
+            # might break checking process so defects from project files are not reported
+            breaking_defect_ids = ("preprocessorErrorDirective", "syntaxError")
             if args["id"] in breaking_defect_ids:
                 if self.options.get("verbose"):
                     click.echo(
@@ -107,10 +107,11 @@ class CppcheckCheckTool(CheckToolBase):
 
         cmd = [
             tool_path,
-            "--addon-python=%s" % proc.get_pythonexe_path(),
+            f"--addon-python={proc.get_pythonexe_path()}",
             "--error-exitcode=3",
             "--verbose" if self.options.get("verbose") else "--quiet",
         ]
+
 
         cmd.append(
             '--template="%s"'
@@ -134,10 +135,10 @@ class CppcheckCheckTool(CheckToolBase):
                 "portability",
                 "unusedFunction",
             ]
-            cmd.append("--enable=%s" % ",".join(enabled_checks))
+            cmd.append(f'--enable={",".join(enabled_checks)}')
 
         if not self.is_flag_set("--language", flags):
-            cmd.append("--language=" + language)
+            cmd.append(f"--language={language}")
 
         build_flags = self.cxx_flags if language == "c++" else self.cc_flags
 
@@ -145,19 +146,21 @@ class CppcheckCheckTool(CheckToolBase):
             # Try to guess the standard version from the build flags
             for flag in build_flags:
                 if "-std" in flag:
-                    cmd.append("-" + self.convert_language_standard(flag))
+                    cmd.append(f"-{self.convert_language_standard(flag)}")
 
         cmd.extend(
-            ["-D%s" % d for d in self.cpp_defines + self.toolchain_defines[language]]
+            [f"-D{d}" for d in self.cpp_defines + self.toolchain_defines[language]]
         )
+
 
         cmd.extend(flags)
 
         cmd.extend(
-            "--include=" + inc
+            f"--include={inc}"
             for inc in self.get_forced_includes(build_flags, self.cpp_includes)
         )
-        cmd.append("--includes-file=%s" % self._generate_inc_file())
+
+        cmd.append(f"--includes-file={self._generate_inc_file()}")
         cmd.append('"%s"' % src_file)
 
         return cmd
@@ -198,13 +201,15 @@ class CppcheckCheckTool(CheckToolBase):
         return self._create_tmp_file("\n".join(src_files))
 
     def _generate_inc_file(self):
-        result = []
-        for inc in self.cpp_includes:
-            if self.options.get("skip_packages") and inc.lower().startswith(
+        result = [
+            inc
+            for inc in self.cpp_includes
+            if not self.options.get("skip_packages")
+            or not inc.lower().startswith(
                 self.config.get("platformio", "packages_dir").lower()
-            ):
-                continue
-            result.append(inc)
+            )
+        ]
+
         return self._create_tmp_file("\n".join(result))
 
     def clean_up(self):
@@ -216,7 +221,7 @@ class CppcheckCheckTool(CheckToolBase):
 
         for files in self.get_project_target_files(self.options["patterns"]).values():
             for f in files:
-                dump_file = f + ".dump"
+                dump_file = f"{f}.dump"
                 if os.path.isfile(dump_file):
                     os.remove(dump_file)
 

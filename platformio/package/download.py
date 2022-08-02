@@ -77,7 +77,7 @@ class FileDownloader(object):
         try:
             if not with_progress or self.get_size() == -1:
                 if not silent:
-                    click.echo("%s..." % label)
+                    click.echo(f"{label}...")
                 for chunk in itercontent:
                     if chunk:
                         fp.write(chunk)
@@ -117,9 +117,7 @@ class FileDownloader(object):
             hash_algo = "sha256"
 
         if not hash_algo:
-            raise PackageException(
-                "Could not determine checksum algorithm by %s" % checksum
-            )
+            raise PackageException(f"Could not determine checksum algorithm by {checksum}")
 
         dl_checksum = fs.calculate_file_hashsum(hash_algo, self._destination)
         if checksum.lower() != dl_checksum.lower():

@@ -119,8 +119,7 @@ def load_project_ide_data(project_dir, env_or_envs, cache=False):
 
     with fs.cd(project_dir):
         result = _load_cached_project_ide_data(project_dir, env_names) if cache else {}
-        missed_env_names = set(env_names) - set(result.keys())
-        if missed_env_names:
+        if missed_env_names := set(env_names) - set(result.keys()):
             result.update(_load_project_ide_data(project_dir, missed_env_names))
 
     if not isinstance(env_or_envs, list) and env_or_envs in result:

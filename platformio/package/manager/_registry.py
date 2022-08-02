@@ -35,7 +35,7 @@ class RegistryFileMirrorIterator(object):
     def __init__(self, download_url):
         self.download_url = download_url
         self._url_parts = urlparse(download_url)
-        self._mirror = "%s://%s" % (self._url_parts.scheme, self._url_parts.netloc)
+        self._mirror = f"{self._url_parts.scheme}://{self._url_parts.netloc}"
         self._visited_mirrors = []
 
     def __iter__(self):  # pylint: disable=non-iterator-returned
@@ -112,7 +112,7 @@ class PackageManageRegistryMixin(object):
                     silent=silent,
                 )
             except Exception as e:  # pylint: disable=broad-except
-                self.print_message("Warning! Package Mirror: %s" % e, fg="yellow")
+                self.print_message(f"Warning! Package Mirror: {e}", fg="yellow")
                 self.print_message("Looking for another mirror...", fg="yellow")
 
         return None
@@ -143,8 +143,7 @@ class PackageManageRegistryMixin(object):
         if spec.owner and spec.name:
             result = regclient.get_package(self.pkg_type, spec.owner, spec.name)
         if not result and (spec.id or (spec.name and not spec.owner)):
-            packages = self.search_registry_packages(spec)
-            if packages:
+            if packages := self.search_registry_packages(spec):
                 result = regclient.get_package(
                     self.pkg_type, packages[0]["owner"]["username"], packages[0]["name"]
                 )
@@ -186,13 +185,12 @@ class PackageManageRegistryMixin(object):
 
     def find_best_registry_version(self, packages, spec):
         for package in packages:
-            # find compatible version within the latest package versions
-            version = self.pick_best_registry_version([package["version"]], spec)
-            if version:
+            if version := self.pick_best_registry_version(
+                [package["version"]], spec
+            ):
                 return (package, version)
 
-            # if the custom version requirements, check ALL package versions
-            version = self.pick_best_registry_version(
+            if version := self.pick_best_registry_version(
                 self.fetch_registry_package(
                     PackageSpec(
                         id=package["id"],
@@ -201,8 +199,7 @@ class PackageManageRegistryMixin(object):
                     )
                 ).get("versions"),
                 spec,
-            )
-            if version:
+            ):
                 return (package, version)
             time.sleep(1)
         return (None, None)
@@ -230,7 +227,11 @@ class PackageManageRegistryMixin(object):
         return best
 
     def _pick_compatible_pkg_file(self, version_files):
-        for item in version_files:
-            if self.is_system_compatible(item.get("system")):
-                return item
-        return None
+        return next(
+            (
+                item
+                for item in version_files
+                if self.is_system_compatible(item.get("system"))
+            ),
+            None,
+        )

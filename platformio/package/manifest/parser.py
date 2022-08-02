@@ -44,17 +44,18 @@ class ManifestFileType(object):
 
     @classmethod
     def from_uri(cls, uri):
-        for t in sorted(cls.items().values()):
-            if uri.endswith(t):
-                return t
-        return None
+        return next((t for t in sorted(cls.items().values()) if uri.endswith(t)), None)
 
     @classmethod
     def from_dir(cls, path):
-        for t in sorted(cls.items().values()):
-            if os.path.isfile(os.path.join(path, t)):
-                return t
-        return None
+        return next(
+            (
+                t
+                for t in sorted(cls.items().values())
+                if os.path.isfile(os.path.join(path, t))
+            ),
+            None,
+        )
 
 
 class ManifestParserFactory(object):
@@ -72,17 +73,17 @@ class ManifestParserFactory(object):
     @classmethod
     def new_from_file(cls, path, remote_url=False):
         if not path or not os.path.isfile(path):
-            raise UnknownManifestError("Manifest file does not exist %s" % path)
-        type_from_uri = ManifestFileType.from_uri(path)
-        if not type_from_uri:
-            raise UnknownManifestError("Unknown manifest file type %s" % path)
-        return ManifestParserFactory.new(
-            cls.read_manifest_contents(path), type_from_uri, remote_url
-        )
+            raise UnknownManifestError(f"Manifest file does not exist {path}")
+        if type_from_uri := ManifestFileType.from_uri(path):
+            return ManifestParserFactory.new(
+                cls.read_manifest_contents(path), type_from_uri, remote_url
+            )
+        else:
+            raise UnknownManifestError(f"Unknown manifest file type {path}")
 
     @classmethod
     def new_from_dir(cls, path, remote_url=None):
-        assert os.path.isdir(path), "Invalid directory %s" % path
+        assert os.path.isdir(path), f"Invalid directory {path}"
 
         type_from_uri = ManifestFileType.from_uri(remote_url) if remote_url else None
         if type_from_uri and os.path.isfile(os.path.join(path, type_from_uri)):
@@ -93,17 +94,15 @@ class ManifestParserFactory(object):
                 package_dir=path,
             )
 
-        type_from_dir = ManifestFileType.from_dir(path)
-        if not type_from_dir:
-            raise UnknownManifestError(
-                "Unknown manifest file type in %s directory" % path
+        if type_from_dir := ManifestFileType.from_dir(path):
+            return ManifestParserFactory.new(
+                cls.read_manifest_contents(os.path.join(path, type_from_dir)),
+                type_from_dir,
+                remote_url=remote_url,
+                package_dir=path,
             )
-        return ManifestParserFactory.new(
-            cls.read_manifest_contents(os.path.join(path, type_from_dir)),
-            type_from_dir,
-            remote_url=remote_url,
-            package_dir=path,
-        )
+        else:
+            raise UnknownManifestError(f"Unknown manifest file type in {path} directory")
 
     @staticmethod
     def new_from_url(remote_url):
@@ -119,20 +118,20 @@ class ManifestParserFactory(object):
         assert path.endswith("tar.gz")
         with tarfile.open(path, mode="r:gz") as tf:
             for t in sorted(ManifestFileType.items().values()):
-                for member in (t, "./" + t):
+                for member in (t, f"./{t}"):
                     try:
                         return ManifestParserFactory.new(
                             tf.extractfile(member).read().decode(), t
                         )
                     except KeyError:
                         pass
-        raise UnknownManifestError("Unknown manifest file type in %s archive" % path)
+        raise UnknownManifestError(f"Unknown manifest file type in {path} archive")
 
     @staticmethod
     def new(  # pylint: disable=redefined-builtin
         contents, type, remote_url=None, package_dir=None
     ):
-        for _, cls in globals().items():
+        for cls in globals().values():
             if (
                 inspect.isclass(cls)
                 and issubclass(cls, BaseManifestParser)
@@ -140,7 +139,7 @@ class ManifestParserFactory(object):
                 and cls.manifest_type == type
             ):
                 return cls(contents, remote_url, package_dir)
-        raise UnknownManifestError("Unknown manifest file type %s" % type)
+        raise UnknownManifestError(f"Unknown manifest file type {type}")
 
 
 class BaseManifestParser(object):
@@ -150,7 +149,7 @@ class BaseManifestParser(object):
         try:
             self._data = self.parse(contents)
         except Exception as e:
-            raise ManifestParserError("Could not parse manifest -> %s" % e)
+            raise ManifestParserError(f"Could not parse manifest -> {e}")
 
         self._data = self.normalize_repository(self._data)
         self._data = self.parse_examples(self._data)
@@ -216,7 +215,7 @@ class BaseManifestParser(object):
         url_attrs = urlparse(url)
         if url_attrs.netloc not in ("github.com", "bitbucket.org", "gitlab.com"):
             return data
-        url = "https://%s%s" % (url_attrs.netloc, url_attrs.path)
+        url = f"https://{url_attrs.netloc}{url_attrs.path}"
         if url.endswith("/"):
             url = url[:-1]
         if not url.endswith(".git"):
@@ -292,16 +291,14 @@ class BaseManifestParser(object):
                     continue
                 last_pio_project = None
 
-            matched_files = [f for f in files if f.endswith(allowed_exts)]
-            if not matched_files:
-                continue
-            result[root] = dict(
-                name="Examples"
-                if root == examples_dir
-                else os.path.relpath(root, examples_dir),
-                base=os.path.relpath(root, package_dir),
-                files=matched_files,
-            )
+            if matched_files := [f for f in files if f.endswith(allowed_exts)]:
+                result[root] = dict(
+                    name="Examples"
+                    if root == examples_dir
+                    else os.path.relpath(root, examples_dir),
+                    base=os.path.relpath(root, package_dir),
+                    files=matched_files,
+                )
 
         result = list(result.values())
 
@@ -373,14 +370,15 @@ class LibraryJsonManifestParser(BaseManifestParser):
 
     @staticmethod
     def _parse_export(raw):
-        if not isinstance(raw, dict):
-            return None
-        result = {}
-        for k in ("include", "exclude"):
-            if not raw.get(k):
-                continue
-            result[k] = raw[k] if isinstance(raw[k], list) else [raw[k]]
-        return result
+        return (
+            {
+                k: raw[k] if isinstance(raw[k], list) else [raw[k]]
+                for k in ("include", "exclude")
+                if raw.get(k)
+            }
+            if isinstance(raw, dict)
+            else None
+        )
 
     @staticmethod
     def _parse_dependencies(raw):
@@ -446,9 +444,7 @@ class ModuleJsonManifestParser(BaseManifestParser):
 
     @staticmethod
     def _parse_license(raw):
-        if not raw or not isinstance(raw, list):
-            return None
-        return raw[0].get("type")
+        return None if not raw or not isinstance(raw, list) else raw[0].get("type")
 
     @staticmethod
     def _parse_dependencies(raw):
@@ -519,10 +515,8 @@ class LibraryPropertiesManifestParser(BaseManifestParser):
     def _parse_keywords(properties):
         result = []
         for item in re.split(r"[\s/]+", properties.get("category", "uncategorized")):
-            item = item.strip()
-            if not item:
-                continue
-            result.append(item.lower())
+            if item := item.strip():
+                result.append(item.lower())
         return result
 
     @staticmethod
@@ -589,12 +583,9 @@ class LibraryPropertiesManifestParser(BaseManifestParser):
             if "raw" in repo_path_tokens:
                 return dict(
                     type="git",
-                    url="https://%s/%s"
-                    % (
-                        url_attrs.netloc,
-                        "/".join(repo_path_tokens[: repo_path_tokens.index("raw")]),
-                    ),
+                    url=f'https://{url_attrs.netloc}/{"/".join(repo_path_tokens[: repo_path_tokens.index("raw")])}',
                 )
+
         if properties.get("url", "").startswith("https://github.com"):
             return dict(type="git", url=properties["url"])
         return None
@@ -652,9 +643,7 @@ class PlatformJsonManifestParser(BaseManifestParser):
 
     @staticmethod
     def _parse_frameworks(raw):
-        if not isinstance(raw, dict):
-            return None
-        return [name.lower() for name in raw.keys()]
+        return [name.lower() for name in raw.keys()] if isinstance(raw, dict) else None
 
     @staticmethod
     def _parse_dependencies(raw):

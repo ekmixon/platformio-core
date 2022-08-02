@@ -74,10 +74,7 @@ class DebugClientProcess(DebugBaseProcess):
             cc.delete(self._session_id)
         if not pid:
             return
-        if IS_WINDOWS:
-            kill = ["Taskkill", "/PID", pid, "/F"]
-        else:
-            kill = ["kill", pid]
+        kill = ["Taskkill", "/PID", pid, "/F"] if IS_WINDOWS else ["kill", pid]
         try:
             proc.exec_command(kill)
         except:  # pylint: disable=bare-except

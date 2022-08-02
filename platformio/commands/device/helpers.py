@@ -26,7 +26,7 @@ from platformio.project.config import ProjectConfig
 
 def apply_project_monitor_options(cli_options, project_options):
     for k in ("port", "speed", "rts", "dtr"):
-        k2 = "monitor_%s" % k
+        k2 = f"monitor_{k}"
         if k == "speed":
             k = "baud"
         if cli_options[k] is None and k2 in project_options:
@@ -64,8 +64,7 @@ def get_project_options(environment=None):
     config = ProjectConfig.get_instance()
     config.validate(envs=[environment] if environment else None)
     if not environment:
-        default_envs = config.default_envs()
-        if default_envs:
+        if default_envs := config.default_envs():
             environment = default_envs[0]
         else:
             environment = config.envs()[0]
@@ -80,7 +79,7 @@ def get_board_hwids(project_dir, platform, board):
 def load_monitor_filter(path, options=None):
     name = os.path.basename(path)
     name = name[: name.find(".")]
-    module = load_python_module("platformio.commands.device.filters.%s" % name, path)
+    module = load_python_module(f"platformio.commands.device.filters.{name}", path)
     for cls in get_object_members(module).values():
         if (
             not inspect.isclass(cls)

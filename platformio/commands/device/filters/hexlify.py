@@ -30,9 +30,6 @@ class Hexlify(DeviceMonitorFilter):
             if (self._counter % 16) == 0:
                 result += "\n{:04X} | ".format(self._counter)
             asciicode = ord(b)
-            if asciicode <= 255:
-                result += "{:02X} ".format(asciicode)
-            else:
-                result += "?? "
+            result += "{:02X} ".format(asciicode) if asciicode <= 255 else "?? "
             self._counter += 1
         return result

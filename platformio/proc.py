@@ -107,8 +107,7 @@ class LineBufferedAsyncPipe(AsyncPipeBase):
 def exec_command(*args, **kwargs):
     result = {"out": None, "err": None, "returncode": None}
 
-    default = dict(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    default.update(kwargs)
+    default = dict(stdout=subprocess.PIPE, stderr=subprocess.PIPE) | kwargs
     kwargs = default
 
     with subprocess.Popen(*args, **kwargs) as p:
@@ -201,8 +200,8 @@ def where_is_program(program, envpath=None):
     for bin_dir in env.get("PATH", "").split(os.pathsep):
         if os.path.isfile(os.path.join(bin_dir, program)):
             return os.path.join(bin_dir, program)
-        if os.path.isfile(os.path.join(bin_dir, "%s.exe" % program)):
-            return os.path.join(bin_dir, "%s.exe" % program)
+        if os.path.isfile(os.path.join(bin_dir, f"{program}.exe")):
+            return os.path.join(bin_dir, f"{program}.exe")
 
     return program
 

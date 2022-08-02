@@ -47,9 +47,9 @@ class DebugServerProcess(DebugBaseProcess):
         if (
             IS_WINDOWS
             and not server_executable.endswith(".exe")
-            and os.path.isfile(server_executable + ".exe")
+            and os.path.isfile(f"{server_executable}.exe")
         ):
-            server_executable = server_executable + ".exe"
+            server_executable = f"{server_executable}.exe"
 
         if not os.path.isfile(server_executable):
             server_executable = where_is_program(server_executable)
@@ -91,14 +91,13 @@ class DebugServerProcess(DebugBaseProcess):
             ld_key = "DYLD_LIBRARY_PATH" if IS_MACOS else "LD_LIBRARY_PATH"
             env[ld_key] = os.path.join(server["cwd"], "lib")
             if os.environ.get(ld_key):
-                env[ld_key] = "%s:%s" % (env[ld_key], os.environ.get(ld_key))
+                env[ld_key] = f"{env[ld_key]}:{os.environ.get(ld_key)}"
         # prepend BIN to PATH
         if server["cwd"] and os.path.isdir(os.path.join(server["cwd"], "bin")):
-            env["PATH"] = "%s%s%s" % (
-                os.path.join(server["cwd"], "bin"),
-                os.pathsep,
-                os.environ.get("PATH", os.environ.get("Path", "")),
-            )
+            env[
+                "PATH"
+            ] = f'{os.path.join(server["cwd"], "bin")}{os.pathsep}{os.environ.get("PATH", os.environ.get("Path", ""))}'
+
 
         await self.spawn(
             *([server_executable] + server["arguments"]), cwd=server["cwd"], env=env
@@ -122,8 +121,7 @@ class DebugServerProcess(DebugBaseProcess):
     def _check_ready_by_pattern(self, data):
         if self._ready:
             return self._ready
-        ready_pattern = self.debug_config.server_ready_pattern
-        if ready_pattern:
+        if ready_pattern := self.debug_config.server_ready_pattern:
             if ready_pattern.startswith("^"):
                 self._ready = re.match(
                     ready_pattern,

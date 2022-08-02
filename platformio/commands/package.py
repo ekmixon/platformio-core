@@ -71,15 +71,14 @@ def check_package_duplicates(
         found = set(system).issubset(set(published_systems))
     if found:
         raise UserSideException(
-            "The package `%s/%s@%s` is already published in the registry"
-            % (owner, name, version)
+            f"The package `{owner}/{name}@{version}` is already published in the registry"
         )
-    other_owners = [
+
+    if other_owners := [
         item["owner"]["username"]
         for item in items
         if item["owner"]["username"] != owner
-    ]
-    if other_owners:
+    ]:
         click.secho(
             "\nWarning! A package with the name `%s` is already published by the next "
             "owners: %s\n" % (name, ", ".join(other_owners)),
@@ -180,16 +179,16 @@ def package_publish(  # pylint: disable=too-many-arguments, too-many-locals
 
         if not non_interactive:
             click.confirm(
-                "Are you sure you want to publish the %s %s to the registry?\n"
-                % (
-                    type_,
-                    click.style(
-                        "%s/%s@%s" % (owner, name, version),
-                        fg="cyan",
-                    ),
+                (
+                    "Are you sure you want to publish the %s %s to the registry?\n"
+                    % (
+                        type_,
+                        click.style(f"{owner}/{name}@{version}", fg="cyan"),
+                    )
                 ),
                 abort=True,
             )
+
 
         response = RegistryClient().publish_package(
             owner, type_, archive_path, released_at, private, notify

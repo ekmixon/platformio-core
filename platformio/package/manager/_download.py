@@ -30,15 +30,14 @@ class PackageManagerDownloadMixin(object):
         request_hash = hashlib.new("sha1")
         for arg in args:
             request_hash.update(compat.hashlib_encode_data(arg))
-        dl_path = os.path.join(self.get_download_dir(), request_hash.hexdigest())
-        return dl_path
+        return os.path.join(self.get_download_dir(), request_hash.hexdigest())
 
     def get_download_usagedb_path(self):
         return os.path.join(self.get_download_dir(), "usage.db")
 
     def set_download_utime(self, path, utime=None):
         with app.State(self.get_download_usagedb_path(), lock=True) as state:
-            state[os.path.basename(path)] = int(time.time() if not utime else utime)
+            state[os.path.basename(path)] = int(utime or time.time())
 
     def cleanup_expired_downloads(self):
         with app.State(self.get_download_usagedb_path(), lock=True) as state:

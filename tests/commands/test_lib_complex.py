@@ -28,12 +28,12 @@ def test_search(clirunner, validate_cliresult):
     result = clirunner.invoke(cmd_lib, ["search", "DHT22"])
     validate_cliresult(result)
     match = re.search(r"Found\s+(\d+)\slibraries:", result.output)
-    assert int(match.group(1)) > 2
+    assert int(match[1]) > 2
 
     result = clirunner.invoke(cmd_lib, ["search", "DHT22", "--platform=timsp430"])
     validate_cliresult(result)
     match = re.search(r"Found\s+(\d+)\slibraries:", result.output)
-    assert int(match.group(1)) > 1
+    assert int(match[1]) > 1
 
 
 def test_global_install_registry(clirunner, validate_cliresult, isolated_pio_core):
@@ -232,9 +232,12 @@ def test_global_lib_update_check(clirunner, validate_cliresult):
     result = clirunner.invoke(cmd_lib, ["-g", "update", "--dry-run", "--json-output"])
     validate_cliresult(result)
     output = json.loads(result.output)
-    assert set(
-        ["Adafruit PN532", "AsyncMqttClient", "ESPAsyncTCP", "NeoPixelBus"]
-    ) == set(lib["name"] for lib in output)
+    assert {
+        "Adafruit PN532",
+        "AsyncMqttClient",
+        "ESPAsyncTCP",
+        "NeoPixelBus",
+    } == {lib["name"] for lib in output}
 
 
 def test_global_lib_update(clirunner, validate_cliresult):
@@ -270,7 +273,7 @@ def test_global_lib_uninstall(clirunner, validate_cliresult, isolated_pio_core):
     items = sorted(items, key=lambda item: item["__pkg_dir"])
     result = clirunner.invoke(cmd_lib, ["-g", "uninstall", items[0]["__pkg_dir"]])
     validate_cliresult(result)
-    assert ("Removing %s" % items[0]["name"]) in result.output
+    assert f'Removing {items[0]["name"]}' in result.output
 
     # uninstall the rest libraries
     result = clirunner.invoke(
@@ -335,17 +338,12 @@ def test_lib_stats(clirunner, validate_cliresult):
 
     result = clirunner.invoke(cmd_lib, ["stats", "--json-output"])
     validate_cliresult(result)
-    assert (
-        set(
-            [
-                "dlweek",
-                "added",
-                "updated",
-                "topkeywords",
-                "dlmonth",
-                "dlday",
-                "lastkeywords",
-            ]
-        )
-        == set(json.loads(result.output).keys())
-    )
+    assert {
+        "dlweek",
+        "added",
+        "updated",
+        "topkeywords",
+        "dlmonth",
+        "dlday",
+        "lastkeywords",
+    } == set(json.loads(result.output).keys())

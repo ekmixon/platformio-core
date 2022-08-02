@@ -89,9 +89,7 @@ def makeEmitCompilationDbEntry(comstr):
                 continue
             if os.path.isabs(env[cmd]):
                 continue
-            env[cmd] = where_is_program(
-                env.subst("$%s" % cmd), env.subst("${ENV['PATH']}")
-            )
+            env[cmd] = where_is_program(env.subst(f"${cmd}"), env.subst("${ENV['PATH']}"))
 
         dbtarget = __CompilationDbNode(source)
 
@@ -171,24 +169,25 @@ def generate(env, **kwargs):
 
     components_by_suffix = itertools.chain(
         itertools.product(
-            [".%s" % ext for ext in SRC_C_EXT],
+            [f".{ext}" for ext in SRC_C_EXT],
             [
                 (static_obj, SCons.Defaults.StaticObjectEmitter, "$CCCOM"),
                 (shared_obj, SCons.Defaults.SharedObjectEmitter, "$SHCCCOM"),
             ],
         ),
         itertools.product(
-            [".%s" % ext for ext in SRC_CXX_EXT],
+            [f".{ext}" for ext in SRC_CXX_EXT],
             [
                 (static_obj, SCons.Defaults.StaticObjectEmitter, "$CXXCOM"),
                 (shared_obj, SCons.Defaults.SharedObjectEmitter, "$SHCXXCOM"),
             ],
         ),
         itertools.product(
-            [".%s" % ext for ext in SRC_ASM_EXT],
+            [f".{ext}" for ext in SRC_ASM_EXT],
             [(static_obj, SCons.Defaults.StaticObjectEmitter, "$ASCOM")],
         ),
     )
+
 
     for entry in components_by_suffix:
         suffix = entry[0]

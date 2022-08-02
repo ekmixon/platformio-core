@@ -29,11 +29,11 @@ def cast_version_to_semver(value, force=True, raise_exception=False):
         except ValueError:
             pass
     if raise_exception:
-        raise ValueError("Invalid SemVer version %s" % value)
+        raise ValueError(f"Invalid SemVer version {value}")
     # parse commit hash
     if re.match(r"^[\da-f]+$", value, flags=re.I):
-        return semantic_version.Version("0.0.0+sha." + value)
-    return semantic_version.Version("0.0.0+" + value)
+        return semantic_version.Version(f"0.0.0+sha.{value}")
+    return semantic_version.Version(f"0.0.0+{value}")
 
 
 def pepver_to_semver(pepver):
@@ -49,5 +49,5 @@ def get_original_version(version):
     if int(raw) <= 99:
         return None
     if int(raw) <= 9999:
-        return "%s.%s" % (raw[:-2], int(raw[-2:]))
-    return "%s.%s.%s" % (raw[:-4], int(raw[-4:-2]), int(raw[-2:]))
+        return f"{raw[:-2]}.{int(raw[-2:])}"
+    return f"{raw[:-4]}.{int(raw[-4:-2])}.{int(raw[-2:])}"

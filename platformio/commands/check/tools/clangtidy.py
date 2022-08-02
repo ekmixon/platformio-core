@@ -71,17 +71,19 @@ class ClangtidyCheckTool(CheckToolBase):
 
         cmd.extend(flags + src_files + ["--"])
         cmd.extend(
-            ["-D%s" % d for d in self.cpp_defines + self.toolchain_defines["c++"]]
+            [f"-D{d}" for d in self.cpp_defines + self.toolchain_defines["c++"]]
         )
 
-        includes = []
-        for inc in self.cpp_includes:
-            if self.options.get("skip_packages") and inc.lower().startswith(
-                self.config.get("platformio", "packages_dir").lower()
-            ):
-                continue
-            includes.append(inc)
 
-        cmd.extend(["-I%s" % inc for inc in includes])
+        includes = [
+            inc
+            for inc in self.cpp_includes
+            if not self.options.get("skip_packages")
+            or not inc.lower().startswith(
+                self.config.get("platformio", "packages_dir").lower()
+            )
+        ]
+
+        cmd.extend([f"-I{inc}" for inc in includes])
 
         return cmd

@@ -71,8 +71,7 @@ def team_create(orgname_teamname, description):
     client = AccountClient()
     client.create_team(orgname, teamname, description)
     return click.secho(
-        "The team %s has been successfully created." % teamname,
-        fg="green",
+        f"The team {teamname} has been successfully created.", fg="green"
     )
 
 
@@ -96,8 +95,8 @@ def team_list(orgname, json_output):
     for org_name in data:
         for team in data[org_name]:
             click.echo()
-            click.secho("%s:%s" % (org_name, team.get("name")), fg="cyan")
-            click.echo("-" * len("%s:%s" % (org_name, team.get("name"))))
+            click.secho(f'{org_name}:{team.get("name")}', fg="cyan")
+            click.echo("-" * len(f'{org_name}:{team.get("name")}'))
             table_data = []
             if team.get("description"):
                 table_data.append(("Description:", team.get("description")))
@@ -147,8 +146,7 @@ def team_update(orgname_teamname, **kwargs):
         new_team.update({key: value for key, value in kwargs.items() if value})
     client.update_team(orgname, teamname, new_team)
     return click.secho(
-        "The team %s has been successfully updated." % teamname,
-        fg="green",
+        f"The team {teamname} has been successfully updated.", fg="green"
     )
 
 
@@ -162,15 +160,16 @@ def team_destroy(orgname_teamname):
     orgname, teamname = orgname_teamname.split(":", 1)
     click.confirm(
         click.style(
-            "Are you sure you want to destroy the %s team?" % teamname, fg="yellow"
+            f"Are you sure you want to destroy the {teamname} team?",
+            fg="yellow",
         ),
         abort=True,
     )
+
     client = AccountClient()
     client.destroy_team(orgname, teamname)
     return click.secho(
-        "The team %s has been successfully destroyed." % teamname,
-        fg="green",
+        f"The team {teamname} has been successfully destroyed.", fg="green"
     )
 
 
@@ -188,8 +187,7 @@ def team_add_member(orgname_teamname, username):
     client = AccountClient()
     client.add_team_member(orgname, teamname, username)
     return click.secho(
-        "The new member %s has been successfully added to the %s team."
-        % (username, teamname),
+        f"The new member {username} has been successfully added to the {teamname} team.",
         fg="green",
     )
 
@@ -206,7 +204,6 @@ def team_remove_owner(orgname_teamname, username):
     client = AccountClient()
     client.remove_team_member(orgname, teamname, username)
     return click.secho(
-        "The %s member has been successfully removed from the %s team."
-        % (username, teamname),
+        f"The {username} member has been successfully removed from the {teamname} team.",
         fg="green",
     )

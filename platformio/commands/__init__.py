@@ -58,9 +58,9 @@ class PlatformioCLI(click.MultiCommand):
     def get_command(self, ctx, cmd_name):
         mod = None
         try:
-            mod_path = "platformio.commands." + cmd_name
+            mod_path = f"platformio.commands.{cmd_name}"
             if os.path.isfile(os.path.join(self._pio_cmds_dir, cmd_name, "command.py")):
-                mod_path = "platformio.commands.%s.command" % cmd_name
+                mod_path = f"platformio.commands.{cmd_name}.command"
             mod = __import__(mod_path, None, None, ["cli"])
         except ImportError:
             try:

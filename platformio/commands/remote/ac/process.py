@@ -22,7 +22,7 @@ from platformio.commands.remote.ac.base import AsyncCommandBase
 class ProcessAsyncCmd(protocol.ProcessProtocol, AsyncCommandBase):
     def start(self):
         env = dict(os.environ).copy()
-        env.update({"PLATFORMIO_FORCE_ANSI": "true"})
+        env["PLATFORMIO_FORCE_ANSI"] = "true"
         reactor.spawnProcess(
             self, self.options["executable"], self.options["args"], env
         )

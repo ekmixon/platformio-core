@@ -138,7 +138,7 @@ def remote_run(
     local_targets = []
     if "clean" in target:
         local_targets = ["clean"]
-    elif set(["buildfs", "uploadfs", "uploadfsota"]) & set(target):
+    elif {"buildfs", "uploadfs", "uploadfsota"} & set(target):
         local_targets = ["buildfs"]
     else:
         local_targets = ["checkprogsize", "buildprog"]

@@ -49,7 +49,7 @@ class AsyncClientBase(RemoteClientBase):
             self.acclose(agent_id, ac_id)
         else:
             if self._acs_total > 1 and agent_name:
-                click.echo("[%s] " % agent_name, nl=False)
+                click.echo(f"[{agent_name}] ", nl=False)
             click.echo(result, nl=False)
             self.acread_data(agent_id, ac_id, agent_name)
 

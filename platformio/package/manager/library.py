@@ -62,13 +62,8 @@ class LibraryPackageManager(BasePackageManager):  # pylint: disable=too-many-anc
 
     @staticmethod
     def find_library_root(path):
-        root_dir_signs = set(["include", "Include", "inc", "Inc", "src", "Src"])
-        root_file_signs = set(
-            [
-                "conanfile.py",  # Conan-based library
-                "CMakeLists.txt",  # CMake-based library
-            ]
-        )
+        root_dir_signs = {"include", "Include", "inc", "Inc", "src", "Src"}
+        root_file_signs = {"conanfile.py", "CMakeLists.txt"}
         for root, dirs, files in os.walk(path):
             if not files and len(dirs) == 1:
                 continue
@@ -155,7 +150,5 @@ class LibraryPackageManager(BasePackageManager):  # pylint: disable=too-many-anc
                 name=dependency.get("name"),
                 requirements=dependency.get("version"),
             )
-            pkg = self.get_package(spec)
-            if not pkg:
-                continue
-            self._uninstall(pkg, silent=silent)
+            if pkg := self.get_package(spec):
+                self._uninstall(pkg, silent=silent)

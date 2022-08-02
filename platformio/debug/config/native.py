@@ -16,9 +16,12 @@ from platformio.compat import IS_WINDOWS
 from platformio.debug.config.base import DebugConfigBase
 
 
+
+
 class NativeDebugConfig(DebugConfigBase):
 
-    GDB_INIT_SCRIPT = """
+    GDB_INIT_SCRIPT = (
+        """
 define pio_reset_halt_target
 end
 
@@ -29,6 +32,6 @@ define pio_restart_target
 end
 
 $INIT_BREAK
-""" + (
-        "set startup-with-shell off" if not IS_WINDOWS else ""
+"""
+        + ("" if IS_WINDOWS else "set startup-with-shell off")
     )

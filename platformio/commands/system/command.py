@@ -46,13 +46,15 @@ def cli():
 @click.option("--json-output", is_flag=True)
 def system_info(json_output):
     project_config = ProjectConfig()
-    data = {}
-    data["core_version"] = {"title": "PlatformIO Core", "value": __version__}
-    data["python_version"] = {
-        "title": "Python",
-        "value": "{0}.{1}.{2}-{3}.{4}".format(*list(sys.version_info)),
+    data = {
+        "core_version": {"title": "PlatformIO Core", "value": __version__},
+        "python_version": {
+            "title": "Python",
+            "value": "{0}.{1}.{2}-{3}.{4}".format(*list(sys.version_info)),
+        },
+        "system": {"title": "System Type", "value": util.get_systype()},
     }
-    data["system"] = {"title": "System Type", "value": util.get_systype()}
+
     data["platform"] = {"title": "Platform", "value": platform.platform(terse=True)}
     data["filesystem_encoding"] = {
         "title": "File System Encoding",

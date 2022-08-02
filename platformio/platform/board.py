@@ -29,9 +29,9 @@ class PlatformBoardConfig(object):
             self._manifest = fs.load_json(manifest_path)
         except ValueError:
             raise InvalidBoardManifest(manifest_path)
-        if not set(["name", "url", "vendor"]) <= set(self._manifest):
+        if not {"name", "url", "vendor"} <= set(self._manifest):
             raise UserSideException(
-                "Please specify name, url and vendor fields for " + manifest_path
+                f"Please specify name, url and vendor fields for {manifest_path}"
             )
 
     def get(self, path, default=None):
@@ -48,10 +48,7 @@ class PlatformBoardConfig(object):
     def update(self, path, value):
         newdict = None
         for key in path.split(".")[::-1]:
-            if newdict is None:
-                newdict = {key: value}
-            else:
-                newdict = {key: newdict}
+            newdict = {key: value} if newdict is None else {key: newdict}
         util.merge_dicts(self._manifest, newdict)
 
     def __contains__(self, key):
@@ -96,20 +93,22 @@ class PlatformBoardConfig(object):
         }
         if self._manifest.get("connectivity"):
             result["connectivity"] = self._manifest.get("connectivity")
-        debug = self.get_debug_data()
-        if debug:
+        if debug := self.get_debug_data():
             result["debug"] = debug
         return result
 
     def get_debug_data(self):
         if not self._manifest.get("debug", {}).get("tools"):
             return None
-        tools = {}
-        for name, options in self._manifest["debug"]["tools"].items():
-            tools[name] = {}
-            for key, value in options.items():
-                if key in ("default", "onboard") and value:
-                    tools[name][key] = value
+        tools = {
+            name: {
+                key: value
+                for key, value in options.items()
+                if key in ("default", "onboard") and value
+            }
+            for name, options in self._manifest["debug"]["tools"].items()
+        }
+
         return {"tools": tools}
 
     def get_debug_tool_name(self, custom=None):
@@ -124,9 +123,9 @@ class PlatformBoardConfig(object):
             if tool_name in debug_tools:
                 return tool_name
             raise DebugInvalidOptionsError(
-                "Unknown debug tool `%s`. Please use one of `%s` or `custom`"
-                % (tool_name, ", ".join(sorted(list(debug_tools))))
+                f'Unknown debug tool `{tool_name}`. Please use one of `{", ".join(sorted(list(debug_tools)))}` or `custom`'
             )
+
 
         # automatically select best tool
         data = {"default": [], "onboard": [], "external": []}
@@ -137,9 +136,9 @@ class PlatformBoardConfig(object):
                 data["onboard"].append(key)
             data["external"].append(key)
 
-        for key, value in data.items():
+        for value in data.values():
             if not value:
                 continue
             return sorted(value)[0]
 
-        assert any(item for item in data)
+        assert any(data)

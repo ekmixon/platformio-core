@@ -136,7 +136,7 @@ class ProjectConfigBase(object):
         renamed_options = {}
         for option in ProjectOptions.values():
             if option.oldnames:
-                renamed_options.update({name: option.name for name in option.oldnames})
+                renamed_options |= {name: option.name for name in option.oldnames}
 
         for section in self._parser.sections():
             scope = section.split(":", 1)[0]
@@ -161,9 +161,10 @@ class ProjectConfigBase(object):
 
                 # unknown
                 unknown_conditions = [
-                    ("%s.%s" % (scope, option)) not in ProjectOptions,
+                    f"{scope}.{option}" not in ProjectOptions,
                     scope != "env" or not option.startswith(("custom_", "board_")),
                 ]
+
                 if all(unknown_conditions):
                     self.warnings.append(
                         "Ignore unknown configuration option `%s` "
@@ -192,7 +193,7 @@ class ProjectConfigBase(object):
         result = []
         assert section or env
         if not section:
-            section = "env:" + env
+            section = f"env:{env}"
 
         if not self.expand_interpolations:
             return self._parser.options(section)
@@ -219,7 +220,7 @@ class ProjectConfigBase(object):
     def items(self, section=None, env=None, as_dict=False):
         assert section or env
         if not section:
-            section = "env:" + env
+            section = f"env:{env}"
         if as_dict:
             return {
                 option: self.get(section, option) for option in self.options(section)
@@ -252,7 +253,7 @@ class ProjectConfigBase(object):
                 value = self._parser.get(sec, option)
                 break
 
-        option_meta = ProjectOptions.get("%s.%s" % (section.split(":", 1)[0], option))
+        option_meta = ProjectOptions.get(f'{section.split(":", 1)[0]}.{option}')
         if not option_meta:
             if value == MISSING:
                 value = (
@@ -264,7 +265,7 @@ class ProjectConfigBase(object):
             envvar_value = os.getenv(option_meta.sysenvvar)
             if not envvar_value and option_meta.oldnames:
                 for oldoption in option_meta.oldnames:
-                    envvar_value = os.getenv("PLATFORMIO_" + oldoption.upper())
+                    envvar_value = os.getenv(f"PLATFORMIO_{oldoption.upper()}")
                     if envvar_value:
                         break
             if envvar_value and option_meta.multiple:
@@ -303,9 +304,7 @@ class ProjectConfigBase(object):
             raise exception.ProjectOptionValueError(
                 "Infinite recursion has been detected", option, section
             )
-        if isinstance(value, list):
-            return "\n".join(value)
-        return value
+        return "\n".join(value) if isinstance(value, list) else value
 
     def get(self, section, option, default=MISSING):
         value = None
@@ -314,7 +313,7 @@ class ProjectConfigBase(object):
         except ConfigParser.Error as e:
             raise exception.InvalidProjectConfError(self.path, str(e))
 
-        option_meta = ProjectOptions.get("%s.%s" % (section.split(":", 1)[0], option))
+        option_meta = ProjectOptions.get(f'{section.split(":", 1)[0]}.{option}')
         if not option_meta:
             return value
 
@@ -351,12 +350,11 @@ class ProjectConfigBase(object):
         known = set(self.envs())
         if not known:
             raise exception.ProjectEnvsNotAvailableError()
-        unknown = set(list(envs or []) + self.default_envs()) - known
-        if unknown:
+        if unknown := set(list(envs or []) + self.default_envs()) - known:
             raise exception.UnknownEnvNamesError(", ".join(unknown), ", ".join(known))
         if not silent:
             for warning in self.warnings:
-                click.secho("Warning! %s" % warning, fg="yellow")
+                click.secho(f"Warning! {warning}", fg="yellow")
         return True
 
 
@@ -386,7 +384,7 @@ class ProjectConfig(ProjectConfigBase, ProjectConfigDirsMixin):
         return instance["config"]
 
     def __repr__(self):
-        return "<ProjectConfig %s>" % (self.path or "in-memory")
+        return f'<ProjectConfig {self.path or "in-memory"}>'
 
     def as_tuple(self):
         return [(s, self.items(s)) for s in self.sections()]

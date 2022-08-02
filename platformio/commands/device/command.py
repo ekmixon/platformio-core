@@ -69,36 +69,37 @@ def device_list(  # pylint: disable=too-many-branches
             for item in value:
                 click.secho(item["port"], fg="cyan")
                 click.echo("-" * len(item["port"]))
-                click.echo("Hardware ID: %s" % item["hwid"])
-                click.echo("Description: %s" % item["description"])
+                click.echo(f'Hardware ID: {item["hwid"]}')
+                click.echo(f'Description: {item["description"]}')
                 click.echo("")
 
         if key == "logical":
             for item in value:
                 click.secho(item["path"], fg="cyan")
                 click.echo("-" * len(item["path"]))
-                click.echo("Name: %s" % item["name"])
+                click.echo(f'Name: {item["name"]}')
                 click.echo("")
 
         if key == "mdns":
             for item in value:
                 click.secho(item["name"], fg="cyan")
                 click.echo("-" * len(item["name"]))
-                click.echo("Type: %s" % item["type"])
-                click.echo("IP: %s" % item["ip"])
-                click.echo("Port: %s" % item["port"])
+                click.echo(f'Type: {item["type"]}')
+                click.echo(f'IP: {item["ip"]}')
+                click.echo(f'Port: {item["port"]}')
                 if item["properties"]:
                     click.echo(
-                        "Properties: %s"
-                        % (
-                            "; ".join(
+                        (
+                            "Properties: %s"
+                            % "; ".join(
                                 [
-                                    "%s=%s" % (k, v)
+                                    f"{k}={v}"
                                     for k, v in item["properties"].items()
                                 ]
                             )
                         )
                     )
+
                 click.echo("")
 
         if single_key:
@@ -200,13 +201,13 @@ def device_monitor(**kwargs):  # pylint: disable=too-many-branches
             )
             for item in ports:
                 for hwid in board_hwids:
-                    hwid_str = ("%s:%s" % (hwid[0], hwid[1])).replace("0x", "")
+                    hwid_str = f"{hwid[0]}:{hwid[1]}".replace("0x", "")
                     if hwid_str in item["hwid"]:
                         kwargs["port"] = item["port"]
                         break
                 if kwargs["port"]:
                     break
-    elif kwargs["port"] and (set(["*", "?", "[", "]"]) & set(kwargs["port"])):
+    elif {"*", "?", "[", "]"} & set(kwargs["port"]):
         for item in util.get_serial_ports():
             if fnmatch(item["port"], kwargs["port"]):
                 kwargs["port"] = item["port"]
@@ -221,9 +222,9 @@ def device_monitor(**kwargs):  # pylint: disable=too-many-branches
 
     if not kwargs["quiet"]:
         click.echo(
-            "--- Available filters and text transformations: %s"
-            % ", ".join(sorted(miniterm.TRANSFORMATIONS.keys()))
+            f'--- Available filters and text transformations: {", ".join(sorted(miniterm.TRANSFORMATIONS.keys()))}'
         )
+
         click.echo("--- More details at https://bit.ly/pio-monitor-filters")
     try:
         miniterm.main(

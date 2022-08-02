@@ -30,7 +30,7 @@ class Timestamp(DeviceMonitorFilter):
         timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
         if not self._line_started:
             self._line_started = True
-            text = "%s > %s" % (timestamp, text)
+            text = f"{timestamp} > {text}"
         if text.endswith("\n"):
             self._line_started = False
             return text[:-1].replace("\n", "\n%s > " % timestamp) + "\n"

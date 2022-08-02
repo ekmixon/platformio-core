@@ -202,10 +202,7 @@ class PackageManagerInstallMixin(object):
                 fs.rmtree(path)
 
         if action == "detach-existing":
-            target_dirname = "%s@%s" % (
-                tmp_pkg.get_safe_dirname(),
-                dst_pkg.metadata.version,
-            )
+            target_dirname = f"{tmp_pkg.get_safe_dirname()}@{dst_pkg.metadata.version}"
             if dst_pkg.metadata.spec.url:
                 target_dirname = "%s@src-%s" % (
                     tmp_pkg.get_safe_dirname(),
@@ -223,10 +220,7 @@ class PackageManagerInstallMixin(object):
             return PackageItem(dst_pkg.path)
 
         if action == "detach-new":
-            target_dirname = "%s@%s" % (
-                tmp_pkg.get_safe_dirname(),
-                tmp_pkg.metadata.version,
-            )
+            target_dirname = f"{tmp_pkg.get_safe_dirname()}@{tmp_pkg.metadata.version}"
             if tmp_pkg.metadata.spec.external:
                 target_dirname = "%s@src-%s" % (
                     tmp_pkg.get_safe_dirname(),

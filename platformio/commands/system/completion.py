@@ -23,8 +23,9 @@ def get_completion_install_path(shell):
     prog_name = click.get_current_context().find_root().info_name
     if shell == "fish":
         return os.path.join(
-            home_dir, ".config", "fish", "completions", "%s.fish" % prog_name
+            home_dir, ".config", "fish", "completions", f"{prog_name}.fish"
         )
+
     if shell == "bash":
         return os.path.join(home_dir, ".bash_completion")
     if shell == "zsh":
@@ -33,7 +34,7 @@ def get_completion_install_path(shell):
         return subprocess.check_output(
             ["powershell", "-NoProfile", "echo $profile"]
         ).strip()
-    raise click.ClickException("%s is not supported." % shell)
+    raise click.ClickException(f"{shell} is not supported.")
 
 
 def is_completion_code_installed(shell, path):

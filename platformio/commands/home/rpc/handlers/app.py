@@ -66,12 +66,13 @@ class AppRPC:
 
             # skip non-existing recent projects
             storage["recentProjects"] = list(
-                set(
+                {
                     str(Path(p).resolve())
                     for p in storage.get("recentProjects", [])
                     if is_platformio_project(p)
-                )
+                }
             )
+
 
             state["storage"] = storage
             state.modified = False  # skip saving extra fields

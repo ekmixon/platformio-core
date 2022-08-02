@@ -193,10 +193,12 @@ def process_env(
 
 
 def print_processing_header(env, config, verbose=False):
-    env_dump = []
-    for k, v in config.items(env=env):
-        if verbose or k in ("platform", "framework", "board"):
-            env_dump.append("%s: %s" % (k, ", ".join(v) if isinstance(v, list) else v))
+    env_dump = [
+        f'{k}: {", ".join(v) if isinstance(v, list) else v}'
+        for k, v in config.items(env=env)
+        if verbose or k in ("platform", "framework", "board")
+    ]
+
     click.echo(
         "Processing %s (%s)"
         % (click.style(env, fg="cyan", bold=True), "; ".join(env_dump))

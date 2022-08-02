@@ -62,12 +62,7 @@ class RemoteClientBase(  # pylint: disable=too-many-instance-attributes
             return
         msg = formatEvent(event)
         click.echo(
-            "%s [%s] %s"
-            % (
-                datetime.fromtimestamp(event["log_time"]).strftime("%Y-%m-%d %H:%M:%S"),
-                event["log_level"].name,
-                msg,
-            )
+            f'{datetime.fromtimestamp(event["log_time"]).strftime("%Y-%m-%d %H:%M:%S")} [{event["log_level"].name}] {msg}'
         )
 
     def connect(self):

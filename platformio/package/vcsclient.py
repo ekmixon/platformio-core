@@ -49,15 +49,16 @@ class VCSClientFactory(object):
         if "#" in remote_url:
             remote_url, tag = remote_url.rsplit("#", 1)
         if not type_:
-            raise VCSBaseException("VCS: Unknown repository type %s" % remote_url)
+            raise VCSBaseException(f"VCS: Unknown repository type {remote_url}")
         try:
-            obj = getattr(sys.modules[__name__], "%sClient" % type_.title())(
+            obj = getattr(sys.modules[__name__], f"{type_.title()}Client")(
                 src_dir, remote_url, tag, silent
             )
+
             assert isinstance(obj, VCSClientBase)
             return obj
         except (AttributeError, AssertionError):
-            raise VCSBaseException("VCS: Unknown repository type %s" % remote_url)
+            raise VCSBaseException(f"VCS: Unknown repository type {remote_url}")
 
 
 class VCSClientBase(object):
@@ -80,13 +81,14 @@ class VCSClientBase(object):
                 assert self.run_cmd(["--version"])
         except (AssertionError, OSError, PlatformioException):
             raise UserSideException(
-                "VCS: `%s` client is not installed in your system" % self.command
+                f"VCS: `{self.command}` client is not installed in your system"
             )
+
         return True
 
     @property
     def storage_dir(self):
-        return os.path.join(self.src_dir, "." + self.command)
+        return os.path.join(self.src_dir, f".{self.command}")
 
     def export(self):
         raise NotImplementedError
@@ -114,7 +116,7 @@ class VCSClientBase(object):
             subprocess.check_call(args, **kwargs)
             return True
         except subprocess.CalledProcessError as e:
-            raise VCSBaseException("VCS: Could not process command %s" % e.cmd)
+            raise VCSBaseException(f"VCS: Could not process command {e.cmd}")
 
     def get_cmd_output(self, args, **kwargs):
         args = [self.command] + args
@@ -124,7 +126,7 @@ class VCSClientBase(object):
         if result["returncode"] == 0:
             return result["out"].strip()
         raise VCSBaseException(
-            "VCS: Could not receive an output from `%s` command (%s)" % (args, result)
+            f"VCS: Could not receive an output from `{args}` command ({result})"
         )
 
 
@@ -146,8 +148,7 @@ class GitClient(VCSClientBase):
             result = proc.exec_command([cls.command, "--exec-path"])
             if result["returncode"] != 0:
                 return False
-            path = result["out"].strip()
-            if path:
+            if path := result["out"].strip():
                 proc.append_env_path("PATH", path)
                 return True
         except (subprocess.CalledProcessError, FileNotFoundError):
@@ -220,7 +221,7 @@ class GitClient(VCSClientBase):
             return self.get_current_revision()
         result = self.get_cmd_output(["ls-remote"])
         for line in result.split("\n"):
-            ref_pos = line.strip().find("refs/heads/" + branch)
+            ref_pos = line.strip().find(f"refs/heads/{branch}")
             if ref_pos > 0:
                 return line[:ref_pos].strip()[:7]
         return None
@@ -245,9 +246,11 @@ class HgClient(VCSClientBase):
         return self.get_cmd_output(["identify", "--id"])
 
     def get_latest_revision(self):
-        if not self.can_be_updated:
-            return self.get_latest_revision()
-        return self.get_cmd_output(["identify", "--id", self.remote_url])
+        return (
+            self.get_cmd_output(["identify", "--id", self.remote_url])
+            if self.can_be_updated
+            else self.get_latest_revision()
+        )
 
 
 class SvnClient(VCSClientBase):

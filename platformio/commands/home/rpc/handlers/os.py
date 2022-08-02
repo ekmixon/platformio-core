@@ -132,9 +132,7 @@ class OSRPC:
                 return 1
             if x[0].lower() > y[0].lower():
                 return 1
-            if x[0].lower() < y[0].lower():
-                return -1
-            return 0
+            return -1 if x[0].lower() < y[0].lower() else 0
 
         items = []
         if path.startswith("~"):

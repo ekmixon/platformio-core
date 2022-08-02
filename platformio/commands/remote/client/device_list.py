@@ -48,7 +48,7 @@ class DeviceListClient(RemoteClientBase):
                 for item in devlist:
                     click.secho(item["port"], fg="cyan")
                     click.echo("-" * len(item["port"]))
-                    click.echo("Hardware ID: %s" % item["hwid"])
-                    click.echo("Description: %s" % item["description"])
+                    click.echo(f'Hardware ID: {item["hwid"]}')
+                    click.echo(f'Description: {item["description"]}')
                     click.echo("")
         self.disconnect()

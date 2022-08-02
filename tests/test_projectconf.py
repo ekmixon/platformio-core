@@ -361,7 +361,7 @@ def test_items(config):
         (
             "debug_server",
             [
-                "%s/tool-openocd/openocd" % os.path.join(DEFAULT_CORE_DIR, "packages"),
+                f'{os.path.join(DEFAULT_CORE_DIR, "packages")}/tool-openocd/openocd',
                 "--help",
             ],
         ),
@@ -370,6 +370,7 @@ def test_items(config):
         ("lib_deps", ["Lib1", "Lib2"]),
         ("custom_builtin_option", "release"),
     ]
+
     assert config.items(env="test_extends") == [
         ("extends", ["strict_settings"]),
         ("build_flags", ["-D RELEASE"]),

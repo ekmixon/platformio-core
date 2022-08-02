@@ -74,14 +74,12 @@ class RemoteAgentService(RemoteClientBase):
     def remote_cmd(self, cmd, options):
         self.log.info("Remote command received: {cmd}", cmd=cmd)
         self.log.debug("Command options: {options!r}", options=options)
-        callback = "_process_cmd_%s" % cmd.replace(".", "_")
+        callback = f'_process_cmd_{cmd.replace(".", "_")}'
         return getattr(self, callback)(options)
 
     def _defer_async_cmd(self, ac, pass_agent_name=True):
         self._acs[ac.id] = ac
-        if pass_agent_name:
-            return (self.id, ac.id, self.name)
-        return (self.id, ac.id)
+        return (self.id, ac.id, self.name) if pass_agent_name else (self.id, ac.id)
 
     def _process_cmd_device_list(self, _):
         return (self.name, util.get_serialports())

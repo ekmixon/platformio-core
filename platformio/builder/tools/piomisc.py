@@ -87,9 +87,7 @@ class InoToCPPConverter(object):
 
     def convert(self, nodes):
         contents = self.merge(nodes)
-        if not contents:
-            return None
-        return self.process(contents)
+        return self.process(contents) if contents else None
 
     def merge(self, nodes):
         assert nodes
@@ -109,7 +107,7 @@ class InoToCPPConverter(object):
         return "\n".join(["#include <Arduino.h>"] + lines) if lines else None
 
     def process(self, contents):
-        out_file = self._main_ino + ".cpp"
+        out_file = f"{self._main_ino}.cpp"
         assert self._gcc_preprocess(contents, out_file)
         contents = self.read_safe_contents(out_file)
         contents = self._join_multiline_strings(contents)
@@ -124,9 +122,10 @@ class InoToCPPConverter(object):
                 '$CXX -o "{0}" -x c++ -fpreprocessed -dD -E "{1}"'.format(
                     out_file, tmp_path
                 ),
-                "Converting " + os.path.basename(out_file[:-4]),
+                f"Converting {os.path.basename(out_file[:-4])}",
             )
         )
+
         atexit.register(_delete_file, tmp_path)
         return os.path.isfile(out_file)
 
@@ -149,10 +148,10 @@ class InoToCPPConverter(object):
                     newlines.append(line[:-1])
                     continue
                 if stropen:
-                    newlines[len(newlines) - 1] += line[:-1]
+                    newlines[-1] += line[:-1]
                     continue
             elif stropen and line.endswith(('",', '";')):
-                newlines[len(newlines) - 1] += line
+                newlines[-1] += line
                 stropen = False
                 newlines.append(
                     '#line %d "%s"' % (linenum, self._main_ino.replace("\\", "/"))
@@ -168,20 +167,20 @@ class InoToCPPConverter(object):
         if not line.startswith("#"):
             return None
         tokens = line.split(" ", 3)
-        if len(tokens) > 2 and tokens[1].isdigit():
-            return int(tokens[1])
-        return None
+        return int(tokens[1]) if len(tokens) > 2 and tokens[1].isdigit() else None
 
     def _parse_prototypes(self, contents):
         prototypes = []
-        reserved_keywords = set(["if", "else", "while"])
-        for match in self.PROTOTYPE_RE.finditer(contents):
-            if (
-                set([match.group(2).strip(), match.group(3).strip()])
+        reserved_keywords = {"if", "else", "while"}
+        prototypes.extend(
+            match
+            for match in self.PROTOTYPE_RE.finditer(contents)
+            if not (
+                {match.group(2).strip(), match.group(3).strip()}
                 & reserved_keywords
-            ):
-                continue
-            prototypes.append(match)
+            )
+        )
+
         return prototypes
 
     def _get_total_lines(self, contents):
@@ -199,24 +198,22 @@ class InoToCPPConverter(object):
         prototypes = self._parse_prototypes(contents) or []
 
         # skip already declared prototypes
-        declared = set(m.group(1).strip() for m in prototypes if m.group(4) == ";")
+        declared = {m.group(1).strip() for m in prototypes if m.group(4) == ";"}
         prototypes = [m for m in prototypes if m.group(1).strip() not in declared]
 
         if not prototypes:
             return contents
 
-        prototype_names = set(m.group(3).strip() for m in prototypes)
+        prototype_names = {m.group(3).strip() for m in prototypes}
         split_pos = prototypes[0].start()
-        match_ptrs = re.search(
+        if match_ptrs := re.search(
             self.PROTOPTRS_TPLRE % ("|".join(prototype_names)),
             contents[:split_pos],
             re.M,
-        )
-        if match_ptrs:
+        ):
             split_pos = contents.rfind("\n", 0, match_ptrs.start()) + 1
 
-        result = []
-        result.append(contents[:split_pos].strip())
+        result = [contents[:split_pos].strip()]
         result.append("%s;" % ";\n".join([m.group(1) for m in prototypes]))
         result.append(
             '#line %d "%s"'
@@ -265,9 +262,7 @@ def _get_compiler_type(env):
     output = "".join([result["out"], result["err"]]).lower()
     if "clang" in output and "LLVM" in output:
         return "clang"
-    if "gcc" in output:
-        return "gcc"
-    return None
+    return "gcc" if "gcc" in output else None
 
 
 def GetCompilerType(env):
@@ -362,7 +357,7 @@ def ConfigureTestTarget(env):
 
     src_filter = ["+<*.cpp>", "+<*.c>"]
     if "PIOTEST_RUNNING_NAME" in env:
-        src_filter.append("+<%s%s>" % (env["PIOTEST_RUNNING_NAME"], os.path.sep))
+        src_filter.append(f'+<{env["PIOTEST_RUNNING_NAME"]}{os.path.sep}>')
     env.Replace(PIOTEST_SRC_FILTER=src_filter)
 
 
@@ -371,7 +366,7 @@ def GetExtraScripts(env, scope):
     for item in env.GetProjectOption("extra_scripts", []):
         if scope == "post" and ":" not in item:
             items.append(item)
-        elif item.startswith("%s:" % scope):
+        elif item.startswith(f"{scope}:"):
             items.append(item[len(scope) + 1 :])
     if not items:
         return items

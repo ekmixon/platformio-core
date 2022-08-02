@@ -63,12 +63,14 @@ class DefectItem(object):
 
         format_str = "{file}:{line}: [{severity}:{category}] {message} {id}"
         return format_str.format(
-            severity=click.style(self.SEVERITY_LABELS[self.severity], fg=defect_color),
+            severity=click.style(
+                self.SEVERITY_LABELS[self.severity], fg=defect_color
+            ),
             category=click.style(self.category.lower(), fg=defect_color),
             file=click.style(self.file, bold=True),
             message=self.message,
             line=self.line,
-            id="%s" % "[%s]" % self.id if self.id else "",
+            id=f'[{self.id}]' if self.id else "",
         )
 
     def __or__(self, defect):
@@ -79,7 +81,7 @@ class DefectItem(object):
         for key, value in DefectItem.SEVERITY_LABELS.items():
             if label == value:
                 return key
-        raise Exception("Unknown severity label -> %s" % label)
+        raise Exception(f"Unknown severity label -> {label}")
 
     def as_dict(self):
         return {

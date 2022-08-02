@@ -114,12 +114,12 @@ def cli(  # pylint: disable=redefined-builtin
         for testname in test_names:
 
             for envname in config.envs():
-                section = "env:%s" % envname
+                section = f"env:{envname}"
 
                 # filter and ignore patterns
                 patterns = dict(filter=list(filter), ignore=list(ignore))
                 for key in patterns:
-                    patterns[key].extend(config.get(section, "test_%s" % key, []))
+                    patterns[key].extend(config.get(section, f"test_{key}", []))
 
                 skip_conditions = [
                     environment and envname not in environment,

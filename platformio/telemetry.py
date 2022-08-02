@@ -185,11 +185,11 @@ class MeasurementProtocol(TelemetryBase):
         self["screen_name"] = " ".join([p.title() for p in cmd_path])
 
     def _ignore_hit(self):
-        if not app.get_setting("enable_telemetry"):
-            return True
-        if self["ea"] in ("Idedata", "_Idedata"):
-            return True
-        return False
+        return (
+            self["ea"] in ("Idedata", "_Idedata")
+            if app.get_setting("enable_telemetry")
+            else True
+        )
 
     def send(self, hittype):
         if self._ignore_hit():
@@ -246,7 +246,7 @@ class MPDataPusher(object):
         if need_nums <= active_nums:
             return
 
-        for i in range(need_nums - active_nums):
+        for _ in range(need_nums - active_nums):
             t = threading.Thread(target=self._worker)
             t.daemon = True
             t.start()
@@ -385,10 +385,11 @@ def send_exception(description, is_fatal=False):
     description = description.replace("\\", "/")
     description = re.sub(
         r'(^|\s+|")(?:[a-z]\:)?((/[^"/]+)+)(\s+|"|$)',
-        lambda m: " %s " % os.path.join(*m.group(2).split("/")[-2:]),
+        lambda m: f' {os.path.join(*m.group(2).split("/")[-2:])} ',
         description,
         re.I | re.M,
     )
+
     description = re.sub(r"\s+", " ", description, flags=re.M)
 
     mp = MeasurementProtocol()
@@ -402,9 +403,7 @@ def _finalize():
     timeout = 1000  # msec
     elapsed = 0
     try:
-        while elapsed < timeout:
-            if not MPDataPusher().in_wait():
-                break
+        while elapsed < timeout and MPDataPusher().in_wait():
             sleep(0.2)
             elapsed += 200
         backup_reports(MPDataPusher().get_items())

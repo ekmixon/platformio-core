@@ -106,7 +106,7 @@ def LoadPioPlatform(env):
         option = option.lower()[6:]
         try:
             if isinstance(board_config.get(option), bool):
-                value = str(value).lower() in ("1", "yes", "true")
+                value = str(value).lower() in {"1", "yes", "true"}
             elif isinstance(board_config.get(option), int):
                 value = int(value)
         except KeyError:
@@ -138,29 +138,26 @@ def PrintConfiguration(env):  # pylint: disable=too-many-statements
 
     def _get_configuration_data():
         return (
-            None
-            if not board_config
-            else [
+            [
                 "CONFIGURATION:",
-                "https://docs.platformio.org/page/boards/%s/%s.html"
-                % (platform.name, board_config.id),
+                f"https://docs.platformio.org/page/boards/{platform.name}/{board_config.id}.html",
             ]
+            if board_config
+            else None
         )
+
 
     def _get_plaform_data():
         data = [
-            "PLATFORM: %s (%s)"
-            % (
-                platform.title,
-                pkg_metadata.version if pkg_metadata else platform.version,
-            )
+            f"PLATFORM: {platform.title} ({pkg_metadata.version if pkg_metadata else platform.version})"
         ]
+
         if (
             int(ARGUMENTS.get("PIOVERBOSE", 0))
             and pkg_metadata
             and pkg_metadata.spec.external
         ):
-            data.append("(%s)" % pkg_metadata.spec.url)
+            data.append(f"({pkg_metadata.spec.url})")
         if board_config:
             data.extend([">", board_config.get("name")])
         return data
@@ -179,9 +176,9 @@ def PrintConfiguration(env):  # pylint: disable=too-many-statements
         ram = board_config.get("upload", {}).get("maximum_ram_size")
         flash = board_config.get("upload", {}).get("maximum_size")
         data.append(
-            "%s RAM, %s Flash"
-            % (fs.humanize_file_size(ram), fs.humanize_file_size(flash))
+            f"{fs.humanize_file_size(ram)} RAM, {fs.humanize_file_size(flash)} Flash"
         )
+
         return data
 
     def _get_debug_data():
@@ -193,9 +190,9 @@ def PrintConfiguration(env):  # pylint: disable=too-many-statements
         data = [
             "DEBUG:",
             "Current",
-            "(%s)"
-            % board_config.get_debug_tool_name(env.GetProjectOption("debug_tool")),
+            f'({board_config.get_debug_tool_name(env.GetProjectOption("debug_tool"))})',
         ]
+
         onboard = []
         external = []
         for key, value in debug_tools.items():
@@ -204,27 +201,25 @@ def PrintConfiguration(env):  # pylint: disable=too-many-statements
             else:
                 external.append(key)
         if onboard:
-            data.extend(["On-board", "(%s)" % ", ".join(sorted(onboard))])
+            data.extend(["On-board", f'({", ".join(sorted(onboard))})'])
         if external:
-            data.extend(["External", "(%s)" % ", ".join(sorted(external))])
+            data.extend(["External", f'({", ".join(sorted(external))})'])
         return data
 
     def _get_packages_data():
         data = []
         for item in platform.dump_used_packages():
             original_version = get_original_version(item["version"])
-            info = "%s %s" % (item["name"], item["version"])
+            info = f'{item["name"]} {item["version"]}'
             extra = []
             if original_version:
                 extra.append(original_version)
             if "src_url" in item and int(ARGUMENTS.get("PIOVERBOSE", 0)):
                 extra.append(item["src_url"])
             if extra:
-                info += " (%s)" % ", ".join(extra)
+                info += f' ({", ".join(extra)})'
             data.append(info)
-        if not data:
-            return None
-        return ["PACKAGES:"] + ["\n - %s" % d for d in sorted(data)]
+        return ["PACKAGES:"] + ["\n - %s" % d for d in sorted(data)] if data else None
 
     for data in (
         _get_configuration_data(),

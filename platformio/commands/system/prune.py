@@ -39,7 +39,7 @@ def prune_cached_data(force=False, dry_run=False, silent=False):
                 click.confirm("Do you want to continue?", abort=True)
             fs.rmtree(cache_dir)
     if not silent:
-        click.secho("Space on disk: %s" % fs.humanize_file_size(reclaimed_space))
+        click.secho(f"Space on disk: {fs.humanize_file_size(reclaimed_space)}")
     return reclaimed_space
 
 
@@ -66,7 +66,7 @@ def _prune_packages(force, dry_run, silent, handler):
         for pkg in handler(dry_run=True)
     ]
     items = sorted(items, key=itemgetter(1), reverse=True)
-    reclaimed_space = sum([item[1] for item in items])
+    reclaimed_space = sum(item[1] for item in items)
     if items and not silent:
         click.echo(
             tabulate(
@@ -86,7 +86,7 @@ def _prune_packages(force, dry_run, silent, handler):
             click.confirm("Do you want to continue?", abort=True)
         handler(dry_run=False)
     if not silent:
-        click.secho("Space on disk: %s" % fs.humanize_file_size(reclaimed_space))
+        click.secho(f"Space on disk: {fs.humanize_file_size(reclaimed_space)}")
     return reclaimed_space
 
 

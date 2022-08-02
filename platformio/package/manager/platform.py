@@ -114,9 +114,7 @@ class PlatformPackageManager(BasePackageManager):  # pylint: disable=too-many-an
             )
             p = PlatformFactory.new(new_pkg)
             missed_pkgs = set(pkgs_before) & set(p.packages)
-            missed_pkgs -= set(
-                item.metadata.name for item in p.get_installed_packages()
-            )
+            missed_pkgs -= {item.metadata.name for item in p.get_installed_packages()}
 
         p.update_packages(only_check)
 
@@ -145,10 +143,10 @@ class PlatformPackageManager(BasePackageManager):  # pylint: disable=too-many-an
 
     def get_all_boards(self):
         boards = self.get_installed_boards()
-        know_boards = ["%s:%s" % (b["platform"], b["id"]) for b in boards]
+        know_boards = [f'{b["platform"]}:{b["id"]}' for b in boards]
         try:
             for board in self.get_registered_boards():
-                key = "%s:%s" % (board["platform"], board["id"])
+                key = f'{board["platform"]}:{board["id"]}'
                 if key not in know_boards:
                     boards.append(board)
         except (HTTPClientError, InternetIsOffline):

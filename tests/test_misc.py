@@ -31,7 +31,7 @@ def test_platformio_cli():
 
 def test_ping_internet_ips():
     for host in __check_internet_hosts__:
-        requests.get("http://%s" % host, allow_redirects=False, timeout=2)
+        requests.get(f"http://{host}", allow_redirects=False, timeout=2)
 
 
 def test_api_internet_offline(without_internet, isolated_pio_core):

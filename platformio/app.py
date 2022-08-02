@@ -105,12 +105,7 @@ class State(object):
             if os.path.isfile(self.path):
                 self._storage = fs.load_json(self.path)
             assert isinstance(self._storage, dict)
-        except (
-            AssertionError,
-            ValueError,
-            UnicodeDecodeError,
-            exception.InvalidJSONFile,
-        ):
+        except (AssertionError, ValueError, exception.InvalidJSONFile):
             self._storage = {}
         return self
 
@@ -182,7 +177,7 @@ def sanitize_setting(name, value):
             value = defdata["validator"](value)
         elif isinstance(defdata["value"], bool):
             if not isinstance(value, bool):
-                value = str(value).lower() in ("true", "yes", "y", "1")
+                value = str(value).lower() in {"true", "yes", "y", "1"}
         elif isinstance(defdata["value"], int):
             value = int(value)
     except Exception:
@@ -208,7 +203,7 @@ def delete_state_item(name):
 
 
 def get_setting(name):
-    _env_name = "PLATFORMIO_SETTING_%s" % name.upper()
+    _env_name = f"PLATFORMIO_SETTING_{name.upper()}"
     if _env_name in os.environ:
         return sanitize_setting(name, os.getenv(_env_name))
 
@@ -287,16 +282,17 @@ def get_cid():
 
 def get_user_agent():
     data = [
-        "PlatformIO/%s" % __version__,
+        f"PlatformIO/{__version__}",
         "CI/%d" % int(proc.is_ci()),
         "Container/%d" % int(proc.is_container()),
     ]
+
     if get_session_var("caller_id"):
-        data.append("Caller/%s" % get_session_var("caller_id"))
+        data.append(f'Caller/{get_session_var("caller_id")}')
     if os.getenv("PLATFORMIO_IDE"):
-        data.append("IDE/%s" % os.getenv("PLATFORMIO_IDE"))
-    data.append("Python/%s" % platform.python_version())
-    data.append("Platform/%s" % platform.platform())
+        data.append(f'IDE/{os.getenv("PLATFORMIO_IDE")}')
+    data.append(f"Python/{platform.python_version()}")
+    data.append(f"Platform/{platform.platform()}")
     return " ".join(data)
 
 

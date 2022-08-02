@@ -81,10 +81,7 @@ def ConfigEnvOption(*args, **kwargs):
 
 
 def calculate_path_hash(path):
-    return "%s-%s" % (
-        os.path.basename(path),
-        hashlib.sha1(hashlib_encode_data(path)).hexdigest()[:10],
-    )
+    return f"{os.path.basename(path)}-{hashlib.sha1(hashlib_encode_data(path)).hexdigest()[:10]}"
 
 
 def expand_dir_templates(path):
@@ -129,7 +126,7 @@ def validate_core_dir(path):
 
 ProjectOptions = OrderedDict(
     [
-        ("%s.%s" % (option.scope, option.name), option)
+        (f"{option.scope}.{option.name}", option)
         for option in [
             #
             # [platformio]

@@ -177,7 +177,7 @@ def _internet_on():
             for var in ("HTTP_PROXY", "HTTPS_PROXY"):
                 if not os.getenv(var) and not os.getenv(var.lower()):
                     continue
-                requests.get("http://%s" % host, allow_redirects=False, timeout=timeout)
+                requests.get(f"http://{host}", allow_redirects=False, timeout=timeout)
                 return True
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((host, 80))

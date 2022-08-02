@@ -65,7 +65,7 @@ class AccountClient(HTTPClient):  # pylint:disable=too-many-public-methods
         headers = kwargs.get("headers", {})
         if "Authorization" not in headers:
             token = self.fetch_authentication_token()
-            headers["Authorization"] = "Bearer %s" % token
+            headers["Authorization"] = f"Bearer {token}"
         kwargs["headers"] = headers
         return self.fetch_json_data(*args, **kwargs)
 
@@ -172,12 +172,11 @@ class AccountClient(HTTPClient):  # pylint:disable=too-many-public-methods
     def update_profile(self, profile, current_password):
         profile["current_password"] = current_password
         self.delete_local_state("summary")
-        response = self.send_auth_request(
+        return self.send_auth_request(
             "put",
             "/v1/profile",
             data=profile,
         )
-        return response
 
     def get_account_info(self, offline=False):
         account = app.get_state_item("account") or {}
@@ -221,7 +220,7 @@ class AccountClient(HTTPClient):  # pylint:disable=too-many-public-methods
         )
 
     def get_org(self, orgname):
-        return self.send_auth_request("get", "/v1/orgs/%s" % orgname)
+        return self.send_auth_request("get", f"/v1/orgs/{orgname}")
 
     def list_orgs(self):
         return self.send_auth_request(
@@ -231,78 +230,59 @@ class AccountClient(HTTPClient):  # pylint:disable=too-many-public-methods
 
     def update_org(self, orgname, data):
         return self.send_auth_request(
-            "put", "/v1/orgs/%s" % orgname, data={k: v for k, v in data.items() if v}
+            "put", f"/v1/orgs/{orgname}", data={k: v for k, v in data.items() if v}
         )
 
     def destroy_org(self, orgname):
-        return self.send_auth_request(
-            "delete",
-            "/v1/orgs/%s" % orgname,
-        )
+        return self.send_auth_request("delete", f"/v1/orgs/{orgname}")
 
     def add_org_owner(self, orgname, username):
         return self.send_auth_request(
-            "post",
-            "/v1/orgs/%s/owners" % orgname,
-            data={"username": username},
+            "post", f"/v1/orgs/{orgname}/owners", data={"username": username}
         )
 
     def list_org_owners(self, orgname):
-        return self.send_auth_request(
-            "get",
-            "/v1/orgs/%s/owners" % orgname,
-        )
+        return self.send_auth_request("get", f"/v1/orgs/{orgname}/owners")
 
     def remove_org_owner(self, orgname, username):
         return self.send_auth_request(
-            "delete",
-            "/v1/orgs/%s/owners" % orgname,
-            data={"username": username},
+            "delete", f"/v1/orgs/{orgname}/owners", data={"username": username}
         )
 
     def create_team(self, orgname, teamname, description):
         return self.send_auth_request(
             "post",
-            "/v1/orgs/%s/teams" % orgname,
+            f"/v1/orgs/{orgname}/teams",
             data={"name": teamname, "description": description},
         )
 
     def destroy_team(self, orgname, teamname):
-        return self.send_auth_request(
-            "delete",
-            "/v1/orgs/%s/teams/%s" % (orgname, teamname),
-        )
+        return self.send_auth_request("delete", f"/v1/orgs/{orgname}/teams/{teamname}")
 
     def get_team(self, orgname, teamname):
-        return self.send_auth_request(
-            "get",
-            "/v1/orgs/%s/teams/%s" % (orgname, teamname),
-        )
+        return self.send_auth_request("get", f"/v1/orgs/{orgname}/teams/{teamname}")
 
     def list_teams(self, orgname):
-        return self.send_auth_request(
-            "get",
-            "/v1/orgs/%s/teams" % orgname,
-        )
+        return self.send_auth_request("get", f"/v1/orgs/{orgname}/teams")
 
     def update_team(self, orgname, teamname, data):
         return self.send_auth_request(
             "put",
-            "/v1/orgs/%s/teams/%s" % (orgname, teamname),
+            f"/v1/orgs/{orgname}/teams/{teamname}",
             data={k: v for k, v in data.items() if v},
         )
 
     def add_team_member(self, orgname, teamname, username):
         return self.send_auth_request(
             "post",
-            "/v1/orgs/%s/teams/%s/members" % (orgname, teamname),
+            f"/v1/orgs/{orgname}/teams/{teamname}/members",
             data={"username": username},
         )
 
     def remove_team_member(self, orgname, teamname, username):
         return self.send_auth_request(
             "delete",
-            "/v1/orgs/%s/teams/%s/members" % (orgname, teamname),
+            f"/v1/orgs/{orgname}/teams/{teamname}/members",
             data={"username": username},
         )
 
@@ -319,9 +299,10 @@ class AccountClient(HTTPClient):  # pylint:disable=too-many-public-methods
                         "post",
                         "/v1/login",
                         headers={
-                            "Authorization": "Bearer %s" % auth.get("refresh_token")
+                            "Authorization": f'Bearer {auth.get("refresh_token")}'
                         },
                     )
+
                     app.set_state_item("account", data)
                     return data.get("auth").get("access_token")
                 except AccountError:

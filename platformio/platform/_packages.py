@@ -25,9 +25,11 @@ class PlatformPackagesMixin(object):
         )
 
     def get_package(self, name, spec=None):
-        if not name:
-            return None
-        return self.pm.get_package(spec or self.get_package_spec(name))
+        return (
+            self.pm.get_package(spec or self.get_package_spec(name))
+            if name
+            else None
+        )
 
     def get_package_dir(self, name):
         pkg = self.get_package(name)
@@ -46,8 +48,9 @@ class PlatformPackagesMixin(object):
             for version in versions:
                 if not version:
                     continue
-                pkg = self.get_package(name, self.get_package_spec(name, version))
-                if pkg:
+                if pkg := self.get_package(
+                    name, self.get_package_spec(name, version)
+                ):
                     result.append(pkg)
         return result
 
@@ -134,9 +137,9 @@ class PlatformPackagesMixin(object):
             )
 
     def are_outdated_packages(self):
-        for pkg in self.get_installed_packages():
-            if self.pm.outdated(
+        return any(
+            self.pm.outdated(
                 pkg, self.get_package_spec(pkg.metadata.name)
-            ).is_outdated(allow_incompatible=False):
-                return True
-        return False
+            ).is_outdated(allow_incompatible=False)
+            for pkg in self.get_installed_packages()
+        )

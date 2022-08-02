@@ -47,7 +47,7 @@ def org_create(orgname, email, displayname):
     client = AccountClient()
     client.create_org(orgname, email, displayname)
     return click.secho(
-        "The organization `%s` has been successfully created." % orgname,
+        f"The organization `{orgname}` has been successfully created.",
         fg="green",
     )
 
@@ -109,7 +109,7 @@ def org_update(cur_orgname, **kwargs):
         )
     client.update_org(cur_orgname, new_org)
     return click.secho(
-        "The organization `%s` has been successfully updated." % cur_orgname,
+        f"The organization `{cur_orgname}` has been successfully updated.",
         fg="green",
     )
 
@@ -125,10 +125,7 @@ def account_destroy(orgname):
         abort=True,
     )
     client.destroy_org(orgname)
-    return click.secho(
-        "Organization `%s` has been destroyed." % orgname,
-        fg="green",
-    )
+    return click.secho(f"Organization `{orgname}` has been destroyed.", fg="green")
 
 
 @cli.command("add", short_help="Add a new owner to organization")
@@ -142,8 +139,7 @@ def org_add_owner(orgname, username):
     client = AccountClient()
     client.add_org_owner(orgname, username)
     return click.secho(
-        "The new owner `%s` has been successfully added to the `%s` organization."
-        % (username, orgname),
+        f"The new owner `{username}` has been successfully added to the `{orgname}` organization.",
         fg="green",
     )
 
@@ -159,7 +155,6 @@ def org_remove_owner(orgname, username):
     client = AccountClient()
     client.remove_org_owner(orgname, username)
     return click.secho(
-        "The `%s` owner has been successfully removed from the `%s` organization."
-        % (username, orgname),
+        f"The `{username}` owner has been successfully removed from the `{orgname}` organization.",
         fg="green",
     )

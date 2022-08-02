@@ -175,4 +175,4 @@ int main() {
                 for flag in ("O", "g", "ggdb")
                 for level in (0, 1, 2)
             )
-            assert all("-O%s" % optimization not in line for optimization in ("g", "s"))
+            assert all(f"-O{optimization}" not in line for optimization in ("g", "s"))

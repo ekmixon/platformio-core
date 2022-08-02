@@ -107,10 +107,11 @@ class Upgrader(object):
             return True
 
         result = [True]
-        for version, callback in self._upgraders:
-            if self.from_version >= version or self.to_version < version:
-                continue
-            result.append(callback(ctx))
+        result.extend(
+            callback(ctx)
+            for version, callback in self._upgraders
+            if self.from_version < version and self.to_version >= version
+        )
 
         return all(result)
 
@@ -149,10 +150,10 @@ def after_upgrade(ctx):
     elif pepver_to_semver(last_version) > pepver_to_semver(__version__):
         click.secho("*" * terminal_width, fg="yellow")
         click.secho(
-            "Obsolete PIO Core v%s is used (previous was %s)"
-            % (__version__, last_version),
+            f"Obsolete PIO Core v{__version__} is used (previous was {last_version})",
             fg="yellow",
         )
+
         click.secho("Please remove multiple PIO Cores from a system:", fg="yellow")
         click.secho(
             "https://docs.platformio.org/page/faq.html"
@@ -181,8 +182,9 @@ def after_upgrade(ctx):
             telemetry.send_event(
                 category="Auto",
                 action="Upgrade",
-                label="%s > %s" % (last_version, __version__),
+                label=f"{last_version} > {__version__}",
             )
+
         else:
             raise exception.UpgradeError("Auto upgrading...")
 
@@ -264,11 +266,11 @@ def check_platformio_upgrade():
 
 def check_internal_updates(ctx, what):  # pylint: disable=too-many-branches
     last_check = app.get_state_item("last_check", {})
-    interval = int(app.get_setting("check_%s_interval" % what)) * 3600 * 24
-    if (time() - interval) < last_check.get(what + "_update", 0):
+    interval = int(app.get_setting(f"check_{what}_interval")) * 3600 * 24
+    if time() - interval < last_check.get(f"{what}_update", 0):
         return
 
-    last_check[what + "_update"] = int(time())
+    last_check[f"{what}_update"] = int(time())
     app.set_state_item("last_check", last_check)
 
     http.ensure_internet_on(raise_exception=True)
@@ -293,18 +295,19 @@ def check_internal_updates(ctx, what):  # pylint: disable=too-many-branches
     click.echo("")
     click.echo("*" * terminal_width)
     click.secho(
-        "There are the new updates for %s (%s)" % (what, ", ".join(outdated_items)),
+        f'There are the new updates for {what} ({", ".join(outdated_items)})',
         fg="yellow",
     )
 
-    if not app.get_setting("auto_update_" + what):
+
+    if not app.get_setting(f"auto_update_{what}"):
         click.secho("Please update them via ", fg="yellow", nl=False)
         click.secho(
-            "`platformio %s update`"
-            % ("lib --global" if what == "libraries" else "platform"),
+            f'`platformio {"lib --global" if what == "libraries" else "platform"} update`',
             fg="cyan",
             nl=False,
         )
+
         click.secho(" command.\n", fg="yellow")
         click.secho(
             "If you want to manually check for the new versions "
@@ -313,14 +316,14 @@ def check_internal_updates(ctx, what):  # pylint: disable=too-many-branches
             nl=False,
         )
         click.secho(
-            "`platformio %s update --dry-run`"
-            % ("lib --global" if what == "libraries" else "platform"),
+            f'`platformio {"lib --global" if what == "libraries" else "platform"} update --dry-run`',
             fg="cyan",
             nl=False,
         )
+
         click.secho(" command.", fg="yellow")
     else:
-        click.secho("Please wait while updating %s ..." % what, fg="yellow")
+        click.secho(f"Please wait while updating {what} ...", fg="yellow")
         if what == "platforms":
             ctx.invoke(cmd_platform_update, platforms=outdated_items)
         elif what == "libraries":

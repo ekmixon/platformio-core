@@ -107,7 +107,7 @@ class DeviceMonitorClient(  # pylint: disable=too-many-instance-attributes
                 devices.append((agent_name, item))
 
         if len(result) == 1 and self.cmd_options["port"]:
-            if set(["*", "?", "[", "]"]) & set(self.cmd_options["port"]):
+            if {"*", "?", "[", "]"} & set(self.cmd_options["port"]):
                 for agent, item in devices:
                     if fnmatch(item["port"], self.cmd_options["port"]):
                         return self.start_remote_monitor(agent, item["port"])
@@ -122,13 +122,14 @@ class DeviceMonitorClient(  # pylint: disable=too-many-instance-attributes
                 click.echo(
                     "{index}. {host}{port} \t{description}".format(
                         index=i + 1,
-                        host=device[0] + ":" if len(result) > 1 else "",
+                        host=f"{device[0]}:" if len(result) > 1 else "",
                         port=device[1]["port"],
                         description=device[1]["description"]
                         if device[1]["description"] != "n/a"
                         else "",
                     )
                 )
+
             device_index = click.prompt(
                 "Please choose a port (number in the list above)",
                 type=click.Choice([str(i + 1) for i, _ in enumerate(devices)]),
